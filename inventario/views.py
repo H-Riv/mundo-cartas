@@ -1,4 +1,3 @@
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Producto, Categoria, Subcategoria, MovimientoStock
@@ -179,10 +178,13 @@ def ajustar_stock(request, pk):
 def importar_productos(request):
     """Vista para importar productos desde Excel/CSV"""
     if request.method == 'GET':
-        # Limpiar errores anteriores de la sesión
-        if 'errores_importacion' in request.session:
-            del request.session['errores_importacion']
-            request.session.modified = True
+        # Solo limpiar errores si viene con el parámetro 'limpiar' o si no hay errores previos
+        # Esto permite que el redirect POST>GET mantenga los errores
+        if request.GET.get('limpiar') == '1' or not request.session.get('errores_importacion'):
+            if 'errores_importacion' in request.session:
+                del request.session['errores_importacion']
+                request.session.modified = True
+        
         # Mostrar la página de importación
         return render(request, 'inventario/importar_productos.html')
     
@@ -280,7 +282,7 @@ def importar_productos(request):
                             errores.append(f"Fila {fila_num}: El código SKU '{row['codigo_sku']}' existe pero con categoría diferente. SKU registrado: '{producto_existente.categoria.nombre}', Excel: '{categoria.nombre}'")
                             continue
                         
-                        # Si subcategoría existe en ambos, validar que coincidan
+                        # Si subcategoria existe en ambos, validar que coincidan
                         if producto_existente.subcategoria and subcategoria:
                             if producto_existente.subcategoria != subcategoria:
                                 errores.append(f"Fila {fila_num}: El código SKU '{row['codigo_sku']}' existe pero con subcategoría diferente. SKU registrado: '{producto_existente.subcategoria.nombre}', Excel: '{subcategoria.nombre}'")
@@ -327,7 +329,7 @@ def importar_productos(request):
                     productos_validos.append(producto)
                     
                 except Exception as e:
-                    # Error genérico más amigable
+                    # Error generico
                     errores.append(f"Fila {fila_num}: Error de formato en los datos. Revise que todas las columnas tengan el formato correcto.")
             
             #Guardar productos válidos (nuevos)
@@ -336,19 +338,23 @@ def importar_productos(request):
                 Producto.objects.bulk_create(productos_validos)
                 productos_nuevos = len(productos_validos)
 
-            # Mensaje de éxito con detalles
+            # Mensaje de exito con detalles
             if productos_nuevos > 0 and productos_actualizados > 0:
-                messages.success(request, f'Se importaron {productos_nuevos} productos nuevos y se actualizó el stock de {productos_actualizados} productos existentes')
+                messages.success(request, f'✓ Se importaron {productos_nuevos} productos nuevos y se actualizó el stock de {productos_actualizados} productos existentes')
             elif productos_nuevos > 0:
-                messages.success(request, f'Se importaron {productos_nuevos} productos nuevos exitosamente')
+                messages.success(request, f'✓ Se importaron {productos_nuevos} productos nuevos exitosamente')
             elif productos_actualizados > 0:
-                messages.success(request, f'Se actualizó el stock de {productos_actualizados} productos existentes')
+                messages.success(request, f'✓ Se actualizó el stock de {productos_actualizados} productos existentes')
             
-            #Guardar errores en sesion para mostrarlos
+            # Guardar errores en sesion para mostrarlos
             if errores:
-                request.session['errores_importacion'] = errores[:20] #Maximo de 20 errores
+                request.session['errores_importacion'] = errores[:20]
                 request.session.modified = True
-                messages.warning(request, f'Se encontraron {len(errores)} errores. Revise el reporte arriba')
+            else:
+                # Si no hay errores, limpiar cualquier error previo
+                if 'errores_importacion' in request.session:
+                    del request.session['errores_importacion']
+                    request.session.modified = True
             
             return redirect('inventario:importar_productos')
         
@@ -398,7 +404,7 @@ def descargar_plantilla(request):
     ws.column_dimensions['H'].width = 15
     ws.column_dimensions['I'].width = 15
     
-    #Preparar respuesta HTTP
+    #Respuesta HTTP
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )

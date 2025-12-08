@@ -148,63 +148,265 @@
         background: #5a6268;
     }
 
-    /* Desplegable de errores */
-    .errors-section {
-        background: #fff;
-        border: 2px solid #dc3545;
-        padding: 20px;
-        margin-top: 20px;
-        border-radius: 4px;
-    }
-
-    .errors-header {
+    /* Pop up de errores */
+    .custom-errors-alert {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+        border: 3px solid #ffc107;
+        border-left: 8px solid #dc3545;
+        padding: 25px 30px;
+        margin-bottom: 30px;
+        border-radius: 6px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        cursor: pointer;
-        padding: 10px;
-        background: #ffe6e6;
-        border-radius: 4px;
-        margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+        animation: slideIn 0.5s ease-out;
     }
 
-    .errors-header:hover {
-        background: #ffd0d0;
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    .errors-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #dc3545;
+    .custom-errors-content {
+        flex: 1;
+        padding-right: 20px;
     }
 
-    .errors-toggle {
+    .custom-errors-title {
         font-size: 20px;
-        color: #dc3545;
-        transition: transform 0.3s;
-    }
-
-    .errors-toggle.expanded {
-        transform: rotate(180deg);
-    }
-
-    .errors-list {
-        display: none;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    .errors-list.show {
-        display: block;
-    }
-
-    .error-item {
-        padding: 10px;
-        background: #fff5f5;
-        border-left: 3px solid #dc3545;
-        margin-bottom: 8px;
-        font-size: 13px;
+        font-weight: 700;
         color: #721c24;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .custom-errors-message {
+        font-size: 14px;
+        color: #856404;
+        line-height: 1.8;
+        margin-top: 5px;
+    }
+
+    .custom-btn-view-errors {
+        padding: 15px 35px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        border-radius: 6px;
+        text-transform: uppercase;
+        transition: all 0.3s;
+        white-space: nowrap;
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        letter-spacing: 0.5px;
+    }
+
+    .custom-btn-view-errors:hover {
+        background: #c82333;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+    }
+
+    .custom-btn-view-errors:active {
+        transform: translateY(-1px);
+    }
+
+    /* MODAL DE ERRORES */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border: 3px solid #dc3545;
+        border-radius: 8px;
+        max-width: 1000px;
+        width: 100%;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+        animation: modalSlideIn 0.4s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-80px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+        color: white;
+        padding: 25px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 5px 5px 0 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-title {
+        font-size: 22px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        letter-spacing: 0.5px;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s;
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        background: white;
+        color: #dc3545;
+        transform: rotate(90deg) scale(1.1);
+    }
+
+    .modal-body {
+        padding: 30px;
+        overflow-y: auto;
+        flex: 1;
+        background: #fafafa;
+    }
+
+    .error-summary {
+        background: white;
+        border: 2px solid #f0d06c;
+        border-left: 5px solid #ffc107;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #856404;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .error-summary strong {
+        color: #664d03;
+        font-size: 15px;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .errors-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .error-item-modal {
+        background: white;
+        border-left: 6px solid #dc3545;
+        padding: 18px 25px;
+        border-radius: 6px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .error-item-modal:hover {
+        background: #fff5f5;
+        transform: translateX(8px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.15);
+    }
+
+    .error-number {
+        display: inline-block;
+        background: #dc3545;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-weight: bold;
+        font-size: 13px;
+        margin-right: 15px;
+        min-width: 35px;
+        text-align: center;
+    }
+
+    .error-text {
+        color: #721c24;
+        font-size: 14px;
+        line-height: 1.7;
+        display: inline;
+    }
+
+    .modal-footer {
+        background: #f8f8f8;
+        padding: 20px 30px;
+        border-top: 2px solid #e0e0e0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        border-radius: 0 0 5px 5px;
+    }
+
+    .btn-modal-close {
+        padding: 12px 30px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+
+    .btn-modal-close:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     /* Template example */
@@ -284,28 +486,22 @@
         </ul>
     </div>
     
-    <!-- Errors Section con Desplegable -->
+    <!-- Alerta de errores grande -->
     {% if request.session.errores_importacion %}
-    <div class="errors-section">
-        <div class="errors-header" onclick="toggleErrors()">
-            <div class="errors-title">
-                ⚠️ SE ENCONTRARON {{ request.session.errores_importacion|length }} ERRORES - Click para ver detalles
+    <div class="custom-errors-alert">
+        <div class="custom-errors-content">
+            <div class="custom-errors-title">
+                <span style="font-size: 32px;">⚠️</span>
+                <span>SE ENCONTRARON {{ request.session.errores_importacion|length }} ERRORES EN LA IMPORTACIÓN</span>
             </div>
-            <div class="errors-toggle" id="errors-toggle">▼</div>
-        </div>
-        
-        <div class="errors-list" id="errors-list">
-            {% for error in request.session.errores_importacion %}
-            <div class="error-item">{{ error }}</div>
-            {% endfor %}
-            
-            {% if request.session.errores_importacion|length >= 20 %}
-            <div style="text-align: center; margin-top: 15px; padding: 15px; background: #fff9e6; border-radius: 4px; color: #856404; font-size: 13px;">
-                <strong>ℹ️ Mostrando los primeros 20 errores.</strong><br>
-                Revise el archivo y corrija los errores antes de volver a importar.
+            <div class="custom-errors-message">
+                ⚡ La importación se completó parcialmente. Los productos válidos fueron procesados correctamente.<br>
+                📋 Algunos registros presentaron errores que requieren corrección. Haga clic en el botón para ver el reporte detallado.
             </div>
-            {% endif %}
         </div>
+        <button type="button" class="custom-btn-view-errors" onclick="openErrorModal()">
+            📄 VER REPORTE COMPLETO
+        </button>
     </div>
     {% endif %}
 
@@ -336,7 +532,7 @@
         <!-- Submit Section -->
         <div class="submit-section" id="submit-section" style="display: none;">
             <button type="submit" class="btn-submit">✓ IMPORTAR PRODUCTOS</button>
-            <a href="{% url 'inventario:importar_productos' %}" class="btn-cancel">✕ Cancelar</a>
+            <a href="{% url 'inventario:importar_productos' %}?limpiar=1" class="btn-cancel">✕ Cancelar</a>
         </div>
     </form>
     
@@ -390,6 +586,51 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de errores -->
+{% if request.session.errores_importacion %}
+<div class="modal-overlay" id="errorModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">
+                <span style="font-size: 32px;">⚠️</span>
+                <span>REPORTE DETALLADO DE ERRORES</span>
+            </div>
+            <button type="button" class="modal-close" onclick="closeErrorModal()">×</button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="error-summary">
+                <strong>📊 Resumen de Importación</strong>
+                Se encontraron <strong style="color: #dc3545;">{{ request.session.errores_importacion|length }} errores</strong> durante el proceso de importación.<br>
+                Los productos sin errores fueron importados correctamente. Revise y corrija los siguientes problemas:
+            </div>
+            
+            <div class="errors-container">
+                {% for error in request.session.errores_importacion %}
+                <div class="error-item-modal">
+                    <span class="error-number">{{ forloop.counter }}</span>
+                    <span class="error-text">{{ error }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if request.session.errores_importacion|length >= 20 %}
+            <div style="margin-top: 25px; padding: 18px; background: #fff9e6; border: 2px solid #f0d06c; border-radius: 6px; color: #856404; font-size: 14px; text-align: center;">
+                <strong style="font-size: 15px;">ℹ️ Mostrando los primeros 20 errores</strong><br>
+                Revise y corrija estos errores antes de volver a importar el archivo.
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn-modal-close" onclick="closeErrorModal()">
+                ✓ CERRAR REPORTE
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -411,11 +652,34 @@ function showFileInfo(input) {
     }
 }
 
-function toggleErrors() {
-    const errorsList = document.getElementById('errors-list');
-    const errorsToggle = document.getElementById('errors-toggle');
-    
-    errorsList.classList.toggle('show');
-    errorsToggle.classList.toggle('expanded');
+function openErrorModal() {
+    const modal = document.getElementById('errorModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
 }
+
+function closeErrorModal() {
+    const modal = document.getElementById('errorModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Cerrar modal con tecla ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeErrorModal();
+    }
+});
+
+// Cerrar modal al hacer click fuera del contenido
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('errorModal');
+    if (e.target === modal) {
+        closeErrorModal();
+    }
+});
 {% endblock %}
