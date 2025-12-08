@@ -1,0 +1,754 @@
+/* =====================================
+   MUNDO CARTAS - Sistema de Gestión
+   Estilos Globales
+   ===================================== */
+
+/* Reset y Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #e8e8e8;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    background: white;
+    border: 1px solid #c0c0c0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* ===================================== */
+/* HEADER Y TOOLBAR */
+/* ===================================== */
+
+.header-bar {
+    background: linear-gradient(to bottom, #f0f0f0 0%, #d4d4d4 100%);
+    border-bottom: 1px solid #a0a0a0;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.header-info {
+    font-size: 13px;
+    color: #666;
+}
+
+.toolbar {
+    background: #f8f8f8;
+    border-bottom: 1px solid #d0d0d0;
+    padding: 10px 15px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.toolbar-btn {
+    padding: 6px 16px;
+    background: linear-gradient(to bottom, #ffffff 0%, #e8e8e8 100%);
+    border: 1px solid #adadad;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 2px;
+    font-weight: 500;
+    color: #333;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.toolbar-btn:hover {
+    background: linear-gradient(to bottom, #f0f0f0 0%, #d8d8d8 100%);
+}
+
+.toolbar-btn.active {
+    background: #4472c4;
+    color: white;
+    border-color: #3a5ba0;
+}
+
+/* ===================================== */
+/* MENSAJES Y ALERTAS */
+/* ===================================== */
+
+.messages {
+    padding: 15px;
+    margin: 0;
+}
+
+.alert {
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* ===================================== */
+/* TÍTULOS Y SECCIONES */
+/* ===================================== */
+
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #4472c4;
+}
+
+/* ===================================== */
+/* FORMULARIOS */
+/* ===================================== */
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.form-label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #acacac;
+    font-size: 13px;
+    background: white;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: 2px solid #4472c4;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 60px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* ===================================== */
+/* BOTONES */
+/* ===================================== */
+
+.btn {
+    padding: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 4px;
+}
+
+.btn-primary {
+    background: #28a745;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #218838;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #333;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+}
+
+.btn-icon {
+    padding: 5px 10px;
+    background: white;
+    border: 1px solid #acacac;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-icon:hover {
+    background: #f0f0f0;
+}
+
+.btn-edit {
+    color: #007bff;
+}
+
+.btn-delete {
+    color: #dc3545;
+}
+
+.btn-filter {
+    padding: 8px 20px;
+    background: #4472c4;
+    color: white;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-filter:hover {
+    background: #3a5ba0;
+}
+
+/* ===================================== */
+/* TABLAS */
+/* ===================================== */
+
+.table-container {
+    border: 1px solid #d0d0d0;
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+thead {
+    background: linear-gradient(to bottom, #4472c4 0%, #3a5ba0 100%);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+th {
+    padding: 10px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    border-right: 1px solid #5580ca;
+}
+
+th:last-child {
+    border-right: none;
+}
+
+tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+}
+
+tbody tr:nth-child(even) {
+    background: #f8f8f8;
+}
+
+tbody tr:hover {
+    background: #e8f0ff;
+}
+
+td {
+    padding: 10px;
+    font-size: 13px;
+    border-right: 1px solid #e8e8e8;
+}
+
+td:last-child {
+    border-right: none;
+}
+
+/* Columnas específicas */
+.col-codigo {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #2e5c8a;
+}
+
+.col-stock {
+    text-align: center;
+    font-weight: 700;
+}
+
+.stock-ok {
+    color: #28a745;
+}
+
+.stock-low {
+    color: #ffc107;
+}
+
+.stock-critical {
+    color: #dc3545;
+}
+
+.col-precio {
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+.col-cantidad {
+    text-align: center;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+}
+
+.col-fecha {
+    font-size: 12px;
+    color: #666;
+}
+
+.col-tipo {
+    font-weight: 600;
+}
+
+.tipo-entrada {
+    color: #28a745;
+}
+
+.tipo-salida {
+    color: #dc3545;
+}
+
+.tipo-ajuste {
+    color: #ffc107;
+}
+
+.col-estado {
+    text-align: center;
+}
+
+/* ===================================== */
+/* BADGES */
+/* ===================================== */
+
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 3px;
+}
+
+.badge-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge-inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* ===================================== */
+/* ACTION BUTTONS */
+/* ===================================== */
+
+.action-btns {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+/* ===================================== */
+/* STATS CARDS */
+/* ===================================== */
+
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #d0d0d0;
+    padding: 15px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #4472c4;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* ===================================== */
+/* INFO BOXES Y INSTRUCCIONES */
+/* ===================================== */
+
+.info-box {
+    background: #fff9e6;
+    border: 1px solid #f0d06c;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 11px;
+    color: #856404;
+}
+
+.info-box strong {
+    color: #664d03;
+}
+
+.instructions-box {
+    background: #fff9e6;
+    border: 1px solid #f0d06c;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.instructions-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #664d03;
+    margin-bottom: 10px;
+}
+
+.instructions-list {
+    font-size: 12px;
+    color: #856404;
+    line-height: 1.8;
+    padding-left: 20px;
+}
+
+/* ===================================== */
+/* FILTROS */
+/* ===================================== */
+
+.filters-bar {
+    background: #f8f8f8;
+    border: 1px solid #d0d0d0;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.filters-form {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.filter-input, .filter-select {
+    padding: 7px 10px;
+    border: 1px solid #acacac;
+    font-size: 13px;
+    background: white;
+}
+
+/* ===================================== */
+/* LAYOUTS ESPECÍFICOS */
+/* ===================================== */
+
+/* Layout Inventario (2 columnas) */
+.main-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    min-height: 750px;
+}
+
+.form-panel {
+    background: #f8f8f8;
+    border-right: 1px solid #d0d0d0;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.inventory-panel {
+    padding: 20px;
+}
+
+/* Layout Ajuste Stock (2 columnas más anchas) */
+.main-layout-wide {
+    display: grid;
+    grid-template-columns: 450px 1fr;
+    min-height: 700px;
+}
+
+.left-panel {
+    background: #f8f8f8;
+    border-right: 1px solid #d0d0d0;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.right-panel {
+    padding: 20px;
+}
+
+/* ===================================== */
+/* PRODUCT CARD (Ajuste Stock) */
+/* ===================================== */
+
+.product-card {
+    background: white;
+    border: 2px solid #4472c4;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.product-code {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #4472c4;
+    margin-bottom: 10px;
+}
+
+.product-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.product-info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.info-item {
+    background: #f8f8f8;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.info-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+}
+
+/* ===================================== */
+/* TIPO MOVIMIENTO BUTTONS */
+/* ===================================== */
+
+.tipo-movimiento-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.tipo-btn {
+    padding: 12px;
+    border: 2px solid #d0d0d0;
+    background: white;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.tipo-btn:hover {
+    border-color: #4472c4;
+}
+
+.tipo-btn.selected {
+    background: #4472c4;
+    color: white;
+    border-color: #4472c4;
+}
+
+.tipo-btn-entrada.selected {
+    background: #28a745;
+    border-color: #28a745;
+}
+
+.tipo-btn-salida.selected {
+    background: #dc3545;
+    border-color: #dc3545;
+}
+
+.tipo-btn-ajuste.selected {
+    background: #ffc107;
+    border-color: #ffc107;
+    color: #333;
+}
+
+/* ===================================== */
+/* EXPANDABLE ROWS (Historial) */
+/* ===================================== */
+
+.detail-row {
+    display: none;
+    background: #f9f9f9 !important;
+}
+
+.detail-row.show {
+    display: table-row;
+}
+
+.detail-row td {
+    padding: 15px 20px;
+    border-top: none;
+}
+
+.detail-content {
+    background: white;
+    border-left: 3px solid #4472c4;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.detail-section {
+    margin-bottom: 10px;
+}
+
+.detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.detail-value {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.6;
+}
+
+.expand-icon {
+    font-size: 10px;
+    margin-left: 5px;
+    transition: transform 0.2s;
+}
+
+tr.expanded .expand-icon {
+    transform: rotate(180deg);
+}
+
+/* ===================================== */
+/* EMPTY STATES */
+/* ===================================== */
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+/* ===================================== */
+/* UTILITY CLASSES */
+/* ===================================== */
+
+.hidden {
+    display: none;
+}

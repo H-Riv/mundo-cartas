@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventario - Mundo Cartas{% endblock %}
+
+{% block page_header %}Gestión de Inventario{% endblock %}
+
+{% block content %}
+<!-- Main Layout -->
+<div class="main-layout">
+    <!-- Left Panel - Form -->
+    <div class="form-panel">
+        <div class="section-title" id="form-title">REGISTRO DE PRODUCTO NUEVO</div>
+        
+        <form method="POST" id="producto-form" action="{% url 'inventario:crear_producto' %}">
+            {% csrf_token %}
+            <input type="hidden" name="producto_id" id="producto_id">
+            
+            <div class="form-group">
+                <label class="form-label required">Nombre del Producto:</label>
+                <input type="text" name="nombre" id="nombre" class="form-input" 
+                       placeholder="Ej: Starter Deck Digimon TCG Double Typhoon" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label required">Categoría:</label>
+                <select name="categoria" id="categoria" class="form-select" required>
+                    <option value="">Seleccionar categoría...</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Subcategoría (Franquicia):</label>
+                <select name="subcategoria" id="subcategoria" class="form-select">
+                    <option value="">Seleccionar subcategoría...</option>
+                    {% for subcategoria in subcategorias %}
+                    <option value="{{ subcategoria.id }}">{{ subcategoria.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label required">Precio:</label>
+                    <input type="number" name="precio" id="precio" class="form-input" 
+                           placeholder="$0" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Stock Inicial:</label>
+                    <input type="number" name="stock" id="stock" class="form-input" 
+                           placeholder="0" min="0" required>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>📊 Configuración de Alertas de Stock:</strong><br>
+                Define cuándo este producto debe mostrar alertas de stock bajo o crítico.
+            </div>
+            
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label class="form-label">Stock Mínimo:</label>
+                    <input type="number" name="stock_minimo" id="stock_minimo" class="form-input" 
+                           placeholder="5" min="0" value="5">
+                    <small style="font-size: 10px; color: #666;">Alerta amarilla</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Stock Crítico:</label>
+                    <input type="number" name="stock_critico" id="stock_critico" class="form-input" 
+                           placeholder="2" min="0" value="2">
+                    <small style="font-size: 10px; color: #666;">Alerta roja</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">&nbsp;</label>
+                    <div style="font-size: 11px; color: #666; padding: 8px 0;">
+                        Ej: Figuras → Min: 2, Crítico: 1<br>
+                        Decks → Min: 10, Crítico: 3
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Descripción / Notas:</label>
+                <textarea name="descripcion" id="descripcion" class="form-textarea" 
+                          placeholder="Información adicional del producto..."></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Guardar</button>
+                <button type="button" class="btn btn-secondary" onclick="limpiarFormulario()">🔄 Limpiar</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Right Panel - Inventory List -->
+    <div class="inventory-panel">
+        <div class="section-title">CONSULTA DE INVENTARIO</div>
+        
+        <!-- Filters -->
+        <div class="filters-bar">
+            <form method="GET" class="filters-form">
+                <div class="filter-group">
+                    <label class="filter-label">Buscar:</label>
+                    <input type="text" name="busqueda" class="filter-input" 
+                           placeholder="Código o nombre..." value="{{ request.GET.busqueda }}">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Categoría:</label>
+                    <select name="categoria" class="filter-select">
+                        <option value="">Todas</option>
+                        {% for categoria in categorias %}
+                        <option value="{{ categoria.id }}" 
+                                {% if request.GET.categoria == categoria.id|stringformat:"s" %}selected{% endif %}>
+                            {{ categoria.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Subcategoría:</label>
+                    <select name="subcategoria" class="filter-select">
+                        <option value="">Todas</option>
+                        {% for subcategoria in subcategorias %}
+                        <option value="{{ subcategoria.id }}"
+                                {% if request.GET.subcategoria == subcategoria.id|stringformat:"s" %}selected{% endif %}>
+                            {{ subcategoria.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-filter">🔍 Filtrar</button>
+            </form>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_productos }}</div>
+                <div class="stat-label">Total Productos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_unidades }}</div>
+                <div class="stat-label">Unidades en Stock</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #ffc107;">{{ stock_bajo }}</div>
+                <div class="stat-label">Stock Bajo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #dc3545;">{{ stock_critico }}</div>
+                <div class="stat-label">Stock Crítico</div>
+            </div>
+        </div>
+        
+        <!-- Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">CÓDIGO</th>
+                        <th>PRODUCTO</th>
+                        <th style="width: 120px;">CATEGORÍA</th>
+                        <th style="width: 120px;">SUBCATEGORÍA</th>
+                        <th style="width: 80px;">STOCK</th>
+                        <th style="width: 100px;">PRECIO</th>
+                        <th style="width: 180px;">ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    <tr>
+                        <td class="col-codigo">{{ producto.codigo_sku }}</td>
+                        <td>{{ producto.nombre }}</td>
+                        <td>{{ producto.categoria.nombre }}</td>
+                        <td>{{ producto.subcategoria.nombre|default:"—" }}</td>
+                        <td class="col-stock {{ producto.get_clase_css_stock }}">
+                            {{ producto.stock }}
+                            {% if producto.get_estado_stock == 'CRITICO' %}
+                                ⚠️
+                            {% elif producto.get_estado_stock == 'BAJO' %}
+                                ⚡
+                            {% endif %}
+                        </td>
+                        <td class="col-precio">${{ producto.precio|floatformat:0 }}</td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="{% url 'inventario:ajustar_stock' producto.id %}" class="btn-icon" style="color: #17a2b8; text-decoration: none;">
+                                    📦 Stock
+                                </a>
+                                <button class="btn-icon btn-edit" 
+                                        onclick="editarProducto({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.categoria.id }}, {{ producto.subcategoria.id|default:'null' }}, {{ producto.precio }}, {{ producto.stock }}, {{ producto.stock_minimo }}, {{ producto.stock_critico }}, '{{ producto.descripcion|default:''|escapejs }}')">
+                                    ✏️ Editar
+                                </button>
+                                <form method="POST" action="{% url 'inventario:eliminar_producto' producto.id %}" 
+                                      style="display: inline;"
+                                      onsubmit="return confirm('¿Está seguro de dar de baja este producto?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-icon btn-delete">🗑️ Baja</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                            No hay productos registrados
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+        function editarProducto(id, nombre, categoria, subcategoria, precio, stock, stock_minimo, stock_critico, descripcion) {
+            // Cambiar título del formulario
+            document.getElementById('form-title').textContent = 'EDITAR PRODUCTO';
+            
+            // Cambiar acción del formulario
+            document.getElementById('producto-form').action = `/inventario/editar/${id}/`;
+            
+            // Llenar campos
+            document.getElementById('producto_id').value = id;
+            document.getElementById('nombre').value = nombre;
+            document.getElementById('categoria').value = categoria;
+            document.getElementById('subcategoria').value = subcategoria || '';
+            document.getElementById('precio').value = precio;
+            document.getElementById('stock').value = stock;
+            document.getElementById('stock_minimo').value = stock_minimo;
+            document.getElementById('stock_critico').value = stock_critico;
+            document.getElementById('descripcion').value = descripcion;
+            
+            // Scroll hacia el formulario
+            document.querySelector('.form-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('form-title').textContent = 'REGISTRO DE PRODUCTO NUEVO';
+            document.getElementById('producto-form').action = "{% url 'inventario:crear_producto' %}";
+            document.getElementById('producto-form').reset();
+            document.getElementById('producto_id').value = '';
+            // Restaurar valores por defecto
+            document.getElementById('stock_minimo').value = '5';
+            document.getElementById('stock_critico').value = '2';
+        }
+{% endblock %}

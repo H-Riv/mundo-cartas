@@ -1,0 +1,22 @@
+# Entorno virtual
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+
+# Django
+db.sqlite3
+/media/
+staticfiles/
+
+# Archivos de configuración sensibles
+.env
+*.env
+
+# Node (si usas JS o npm)
+node_modules/
+
+# VSCode
+.vscode/

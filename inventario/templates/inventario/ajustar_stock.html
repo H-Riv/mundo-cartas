@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajuste de Stock - Mundo Cartas{% endblock %}
+
+{% block page_header %}Ajuste de Stock{% endblock %}
+
+{% block toolbar %}
+<a href="{% url 'inventario:lista_productos' %}" class="toolbar-btn">← Volver al Inventario</a>
+<a href="{% url 'inventario:ajustar_stock' producto.id %}" class="toolbar-btn active">📦 Ajustar Stock</a>
+<a href="{% url 'admin:index' %}" class="toolbar-btn">⚙️ Admin</a>
+{% endblock %}
+
+{% block content %}
+<!-- Main Layout -->
+<div class="main-layout-wide">
+    <!-- Left Panel -->
+    <div class="left-panel">
+        <div class="section-title">INFORMACIÓN DEL PRODUCTO</div>
+        
+        <!-- Product Card -->
+        <div class="product-card">
+            <div class="product-code">{{ producto.codigo_sku }}</div>
+            <div class="product-name">{{ producto.nombre }}</div>
+            
+            <div class="product-info-row">
+                <div class="info-item">
+                    <div class="info-label">Stock Actual</div>
+                    <div class="info-value {{ producto.get_clase_css_stock }}">
+                        {{ producto.stock }}
+                        {% if producto.get_estado_stock == 'CRITICO' %}
+                            ⚠️
+                        {% elif producto.get_estado_stock == 'BAJO' %}
+                            ⚡
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Precio</div>
+                    <div class="info-value">${{ producto.precio|floatformat:0 }}</div>
+                </div>
+            </div>
+            
+            <div class="product-info-row">
+                <div class="info-item">
+                    <div class="info-label">Categoría</div>
+                    <div class="info-value" style="font-size: 14px;">{{ producto.categoria.nombre }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Subcategoría</div>
+                    <div class="info-value" style="font-size: 14px;">{{ producto.subcategoria.nombre|default:"—" }}</div>
+                </div>
+            </div>
+            
+            <div class="product-info-row">
+                <div class="info-item">
+                    <div class="info-label">Stock Mínimo</div>
+                    <div class="info-value" style="font-size: 16px;">{{ producto.stock_minimo }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Stock Crítico</div>
+                    <div class="info-value" style="font-size: 16px;">{{ producto.stock_critico }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form -->
+        <div class="section-title">REGISTRAR MOVIMIENTO DE STOCK</div>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label required">Tipo de Movimiento:</label>
+                <div class="tipo-movimiento-grid">
+                    <button type="button" class="tipo-btn tipo-btn-entrada" onclick="selectTipo('ENTRADA', this)">
+                        ⬆️ ENTRADA
+                    </button>
+                    <button type="button" class="tipo-btn tipo-btn-salida" onclick="selectTipo('SALIDA', this)">
+                        ⬇️ SALIDA
+                    </button>
+                    <button type="button" class="tipo-btn tipo-btn-ajuste" onclick="selectTipo('AJUSTE', this)">
+                        ⚙️ AJUSTE
+                    </button>
+                </div>
+                <input type="hidden" name="tipo_movimiento" id="tipo_movimiento" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label required" id="cantidad-label">Cantidad:</label>
+                <input type="number" name="cantidad" id="cantidad" class="form-input" 
+                       placeholder="0" min="1" required>
+                <small id="cantidad-hint" style="font-size: 11px; color: #666; display: block; margin-top: 5px;"></small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label required">Motivo del Movimiento:</label>
+                <input type="text" name="motivo" class="form-input" 
+                       placeholder="Ej: Compra a proveedor, Error de inventario, etc." required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Observaciones Adicionales:</label>
+                <textarea name="observaciones" class="form-textarea" 
+                          placeholder="Detalles adicionales del movimiento (opcional)..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">✓ REGISTRAR MOVIMIENTO</button>
+            <a href="{% url 'inventario:lista_productos' %}" class="btn btn-secondary" style="text-decoration: none; display: block; text-align: center; margin-top: 10px; width: 100%;">
+                ← CANCELAR Y VOLVER
+            </a>
+        </form>
+    </div>
+    
+    <!-- Right Panel - History -->
+    <div class="right-panel">
+        <div class="section-title">HISTORIAL DE MOVIMIENTOS (Últimos 20)</div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">FECHA</th>
+                        <th style="width: 100px;">TIPO</th>
+                        <th style="width: 80px;">CANTIDAD</th>
+                        <th style="width: 100px;">STOCK ANT.</th>
+                        <th style="width: 100px;">STOCK NUEVO</th>
+                        <th>MOTIVO (Click para ver detalles)</th>
+                        <th style="width: 120px;">USUARIO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mov in movimientos %}
+                    <tr onclick="toggleDetail({{ mov.id }})" title="Click para ver detalles completos">
+                        <td class="col-fecha">{{ mov.fecha_movimiento|date:"d/m/Y H:i" }}</td>
+                        <td class="col-tipo tipo-{{ mov.tipo|lower }}">{{ mov.get_tipo_display }}</td>
+                        <td class="col-cantidad">{{ mov.cantidad }}</td>
+                        <td class="col-stock">{{ mov.stock_anterior }}</td>
+                        <td class="col-stock">{{ mov.stock_nuevo }}</td>
+                        <td>
+                            {{ mov.motivo|truncatewords:8 }}
+                            <span class="expand-icon">▼</span>
+                        </td>
+                        <td>{{ mov.usuario.username|default:"Sistema" }}</td>
+                    </tr>
+                    <tr class="detail-row" id="detail-{{ mov.id }}">
+                        <td colspan="7">
+                            <div class="detail-content">
+                                <div class="detail-section">
+                                    <div class="detail-label">📋 Motivo Completo:</div>
+                                    <div class="detail-value">{{ mov.motivo }}</div>
+                                </div>
+                                {% if mov.observaciones %}
+                                <div class="detail-section">
+                                    <div class="detail-label">📝 Observaciones Adicionales:</div>
+                                    <div class="detail-value">{{ mov.observaciones }}</div>
+                                </div>
+                                {% else %}
+                                <div class="detail-section">
+                                    <div class="detail-value" style="color: #999; font-style: italic;">Sin observaciones adicionales</div>
+                                </div>
+                                {% endif %}
+                                <div class="detail-section" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
+                                    <div style="font-size: 11px; color: #666;">
+                                        <strong>Registrado por:</strong> {{ mov.usuario.username|default:"Sistema" }} 
+                                        | <strong>Fecha:</strong> {{ mov.fecha_movimiento|date:"d/m/Y H:i:s" }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <div><strong>Sin movimientos registrados</strong></div>
+                                <div style="font-size: 13px; margin-top: 5px;">
+                                    Este producto aún no tiene historial de movimientos.
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+function selectTipo(tipo, button) {
+    // Remover selección de todos los botones
+    document.querySelectorAll('.tipo-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    // Seleccionar el botón clickeado
+    button.classList.add('selected');
+    
+    // Actualizar el input hidden
+    document.getElementById('tipo_movimiento').value = tipo;
+    
+    // Actualizar el label y hint según el tipo
+    const cantidadLabel = document.getElementById('cantidad-label');
+    const cantidadHint = document.getElementById('cantidad-hint');
+    
+    if (tipo === 'ENTRADA') {
+        cantidadLabel.textContent = 'Cantidad a Agregar:';
+        cantidadHint.textContent = 'Se sumará al stock actual ({{ producto.stock }})';
+    } else if (tipo === 'SALIDA') {
+        cantidadLabel.textContent = 'Cantidad a Restar:';
+        cantidadHint.textContent = 'Se restará del stock actual ({{ producto.stock }})';
+    } else if (tipo === 'AJUSTE') {
+        cantidadLabel.textContent = 'Nuevo Stock Total:';
+        cantidadHint.textContent = 'Establecer stock exacto (actual: {{ producto.stock }})';
+    }
+}
+
+function toggleDetail(movimientoId) {
+    const detailRow = document.getElementById(`detail-${movimientoId}`);
+    const mainRow = event.currentTarget;
+    
+    // Toggle la clase show en la fila de detalles
+    detailRow.classList.toggle('show');
+    
+    // Toggle la clase expanded en la fila principal (para rotar la flecha)
+    mainRow.classList.toggle('expanded');
+}
+{% endblock %}

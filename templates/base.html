@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mundo Cartas{% endblock %}</title>
+    
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    <!-- Estilos adicionales por página -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <!-- Header Bar -->
+        <div class="header-bar">
+            <div class="header-title">🃏 MUNDO CARTAS - {% block page_header %}Sistema de Gestión{% endblock %}</div>
+            <div class="header-info">Usuario: {{ user.username }} | Fecha: {% now "d/m/Y" %} | Hora: {% now "H:i" %}</div>
+        </div>
+        
+        <!-- Toolbar -->
+        <div class="toolbar">
+            {% block toolbar %}
+            <a href="{% url 'inventario:lista_productos' %}" class="toolbar-btn {% if request.resolver_match.url_name == 'lista_productos' %}active{% endif %}">📋 Inventario</a>
+            <a href="{% url 'inventario:importar_productos' %}" class="toolbar-btn">📥 Importar</a>
+            <a href="{% url 'admin:index' %}" class="toolbar-btn">⚙️ Admin</a>
+            {% endblock %}
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Main Content -->
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        {% block extra_js %}{% endblock %}
+    </script>
+</body>
+</html>
