@@ -61,8 +61,12 @@ def crear_producto(request):
                 stock=request.POST.get('stock'),
                 stock_minimo=request.POST.get('stock_minimo', 5),
                 stock_critico=request.POST.get('stock_critico', 2),
-                
             )
+            
+            # Manejar la imagen si fue subida
+            if 'imagen' in request.FILES:
+                producto.imagen = request.FILES['imagen']
+            
             producto.save()
             messages.success(request, f'Producto {producto.codigo_sku} creado exitosamente!')
             return redirect('inventario:lista_productos')
@@ -85,6 +89,11 @@ def editar_producto(request, pk):
             producto.stock = request.POST.get('stock')
             producto.stock_minimo = request.POST.get('stock_minimo', 5)
             producto.stock_critico = request.POST.get('stock_critico', 2)
+            
+            # Manejar la imagen si fue subida
+            if 'imagen' in request.FILES:
+                producto.imagen = request.FILES['imagen']
+            
             producto.save()
             
             messages.success(request, f'Producto {producto.codigo_sku} actualizado exitosamente')
@@ -179,7 +188,7 @@ def importar_productos(request):
     """Vista para importar productos desde Excel/CSV"""
     if request.method == 'GET':
         # Solo limpiar errores si viene con el parámetro 'limpiar' o si no hay errores previos
-        # Esto permite que el redirect POST>GET mantenga los errores
+        # Esto permite que el redirect POST->GET mantenga los errores
         if request.GET.get('limpiar') == '1' or not request.session.get('errores_importacion'):
             if 'errores_importacion' in request.session:
                 del request.session['errores_importacion']
@@ -282,7 +291,7 @@ def importar_productos(request):
                             errores.append(f"Fila {fila_num}: El código SKU '{row['codigo_sku']}' existe pero con categoría diferente. SKU registrado: '{producto_existente.categoria.nombre}', Excel: '{categoria.nombre}'")
                             continue
                         
-                        # Si subcategoria existe en ambos, validar que coincidan
+                        # Si subcategoría existe en ambos, validar que coincidan
                         if producto_existente.subcategoria and subcategoria:
                             if producto_existente.subcategoria != subcategoria:
                                 errores.append(f"Fila {fila_num}: El código SKU '{row['codigo_sku']}' existe pero con subcategoría diferente. SKU registrado: '{producto_existente.subcategoria.nombre}', Excel: '{subcategoria.nombre}'")
@@ -329,7 +338,7 @@ def importar_productos(request):
                     productos_validos.append(producto)
                     
                 except Exception as e:
-                    # Error generico
+                    # Error genérico más amigable
                     errores.append(f"Fila {fila_num}: Error de formato en los datos. Revise que todas las columnas tengan el formato correcto.")
             
             #Guardar productos válidos (nuevos)
@@ -338,7 +347,7 @@ def importar_productos(request):
                 Producto.objects.bulk_create(productos_validos)
                 productos_nuevos = len(productos_validos)
 
-            # Mensaje de exito con detalles
+            # Mensaje de éxito con detalles
             if productos_nuevos > 0 and productos_actualizados > 0:
                 messages.success(request, f'✓ Se importaron {productos_nuevos} productos nuevos y se actualizó el stock de {productos_actualizados} productos existentes')
             elif productos_nuevos > 0:
@@ -404,7 +413,7 @@ def descargar_plantilla(request):
     ws.column_dimensions['H'].width = 15
     ws.column_dimensions['I'].width = 15
     
-    #Respuesta HTTP
+    #Preparar respuesta HTTP
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )

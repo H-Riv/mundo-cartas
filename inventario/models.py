@@ -45,6 +45,16 @@ class Producto(models.Model):
     categoria = models.ForeignKey(Categoria,on_delete=models.PROTECT,related_name='productos', verbose_name="Categoria")
     subcategoria = models.ForeignKey(Subcategoria, on_delete=models.PROTECT, related_name='productos', verbose_name="Subcategoria (Franquicia)", null=True, blank=True)
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripcion")
+    
+    # Campo de imagen
+    imagen = models.ImageField(
+        upload_to='productos/',
+        blank=True,
+        null=True,
+        verbose_name="Imagen del Producto",
+        help_text="Imagen del producto (opcional). Formatos: JPG, PNG"
+    )
+    
     precio = models.DecimalField(max_digits=10, decimal_places=0, validators=[MinValueValidator(Decimal('1'))], verbose_name="Precio de Venta", help_text="Precio en pesos Chilenos")
     stock = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Stock Disponible", help_text="Cantidades de unidades disponibles")
     stock_minimo = models.IntegerField(default=5, validators=[MinValueValidator(0)], verbose_name="Stock Minimo (Alerta Baja)", help_text="Cantidad que activa alerta de stock bajo")
@@ -79,6 +89,12 @@ class Producto(models.Model):
             return 'stock-low'
         else:
             return 'stock-ok'
+    
+    def get_imagen_url(self):
+        """Retorna la URL de la imagen o una imagen por defecto"""
+        if self.imagen and hasattr(self.imagen, 'url'):
+            return self.imagen.url
+        return '/static/images/no-image.png'  # Imagen por defecto
     
     def save(self, *args, **kwargs):
         """Generador de codigo SKU autoincremental (si el producto es nuevo)"""
@@ -130,4 +146,3 @@ class MovimientoStock(models.Model):
         
     def __str__(self):
         return f"{self.tipo} - {self.producto.codigo_sku} - {self.cantidad} unidades"
-    

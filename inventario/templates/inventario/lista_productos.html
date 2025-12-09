@@ -11,7 +11,7 @@
     <div class="form-panel">
         <div class="section-title" id="form-title">REGISTRO DE PRODUCTO NUEVO</div>
         
-        <form method="POST" id="producto-form" action="{% url 'inventario:crear_producto' %}">
+        <form method="POST" id="producto-form" action="{% url 'inventario:crear_producto' %}" enctype="multipart/form-data">
             {% csrf_token %}
             <input type="hidden" name="producto_id" id="producto_id">
             
@@ -39,6 +39,21 @@
                     <option value="{{ subcategoria.id }}">{{ subcategoria.nombre }}</option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <!-- Campo de imagen -->
+            <div class="form-group">
+                <label class="form-label">Imagen del Producto:</label>
+                <div style="margin-bottom: 10px;">
+                    <img id="imagen-preview" src="/static/images/no-image.png" 
+                         style="width: 150px; height: 150px; object-fit: cover; border: 2px solid #d0d0d0; border-radius: 8px; display: block; margin-bottom: 10px;">
+                </div>
+                <input type="file" name="imagen" id="imagen" class="form-input" 
+                       accept="image/jpeg,image/png,image/jpg,image/webp"
+                       onchange="previewImagen(this)">
+                <small style="font-size: 11px; color: #666; display: block; margin-top: 5px;">
+                    Formatos: JPG, PNG, WEBP (máx. 5MB)
+                </small>
             </div>
             
             <div class="form-row">
@@ -165,6 +180,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th style="width: 80px;">IMAGEN</th>
                         <th style="width: 100px;">CÓDIGO</th>
                         <th>PRODUCTO</th>
                         <th style="width: 120px;">CATEGORÍA</th>
@@ -177,6 +193,11 @@
                 <tbody>
                     {% for producto in productos %}
                     <tr>
+                        <td>
+                            <img src="{{ producto.get_imagen_url }}" 
+                                 alt="{{ producto.nombre }}"
+                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                        </td>
                         <td class="col-codigo">{{ producto.codigo_sku }}</td>
                         <td>{{ producto.nombre }}</td>
                         <td>{{ producto.categoria.nombre }}</td>
@@ -196,7 +217,7 @@
                                     📦 Stock
                                 </a>
                                 <button class="btn-icon btn-edit" 
-                                        onclick="editarProducto({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.categoria.id }}, {{ producto.subcategoria.id|default:'null' }}, {{ producto.precio }}, {{ producto.stock }}, {{ producto.stock_minimo }}, {{ producto.stock_critico }}, '{{ producto.descripcion|default:''|escapejs }}')">
+                                        onclick="editarProducto({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.categoria.id }}, {{ producto.subcategoria.id|default:'null' }}, {{ producto.precio }}, {{ producto.stock }}, {{ producto.stock_minimo }}, {{ producto.stock_critico }}, '{{ producto.descripcion|default:''|escapejs }}', '{{ producto.get_imagen_url|escapejs }}')">
                                     ✏️ Editar
                                 </button>
                                 <form method="POST" action="{% url 'inventario:eliminar_producto' producto.id %}" 
@@ -210,7 +231,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
                             No hay productos registrados
                         </td>
                     </tr>
@@ -223,35 +244,54 @@
 {% endblock %}
 
 {% block extra_js %}
-        function editarProducto(id, nombre, categoria, subcategoria, precio, stock, stock_minimo, stock_critico, descripcion) {
-            // Cambiar título del formulario
-            document.getElementById('form-title').textContent = 'EDITAR PRODUCTO';
-            
-            // Cambiar acción del formulario
-            document.getElementById('producto-form').action = `/inventario/editar/${id}/`;
-            
-            // Llenar campos
-            document.getElementById('producto_id').value = id;
-            document.getElementById('nombre').value = nombre;
-            document.getElementById('categoria').value = categoria;
-            document.getElementById('subcategoria').value = subcategoria || '';
-            document.getElementById('precio').value = precio;
-            document.getElementById('stock').value = stock;
-            document.getElementById('stock_minimo').value = stock_minimo;
-            document.getElementById('stock_critico').value = stock_critico;
-            document.getElementById('descripcion').value = descripcion;
-            
-            // Scroll hacia el formulario
-            document.querySelector('.form-panel').scrollIntoView({ behavior: 'smooth' });
+function previewImagen(input) {
+    const preview = document.getElementById('imagen-preview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.src = e.target.result;
         }
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
 
-        function limpiarFormulario() {
-            document.getElementById('form-title').textContent = 'REGISTRO DE PRODUCTO NUEVO';
-            document.getElementById('producto-form').action = "{% url 'inventario:crear_producto' %}";
-            document.getElementById('producto-form').reset();
-            document.getElementById('producto_id').value = '';
-            // Restaurar valores por defecto
-            document.getElementById('stock_minimo').value = '5';
-            document.getElementById('stock_critico').value = '2';
-        }
+function editarProducto(id, nombre, categoria, subcategoria, precio, stock, stock_minimo, stock_critico, descripcion, imagen_url) {
+    // Cambiar título del formulario
+    document.getElementById('form-title').textContent = 'EDITAR PRODUCTO';
+    
+    // Cambiar acción del formulario
+    document.getElementById('producto-form').action = `/inventario/editar/${id}/`;
+    
+    // Llenar campos
+    document.getElementById('producto_id').value = id;
+    document.getElementById('nombre').value = nombre;
+    document.getElementById('categoria').value = categoria;
+    document.getElementById('subcategoria').value = subcategoria || '';
+    document.getElementById('precio').value = precio;
+    document.getElementById('stock').value = stock;
+    document.getElementById('stock_minimo').value = stock_minimo;
+    document.getElementById('stock_critico').value = stock_critico;
+    document.getElementById('descripcion').value = descripcion;
+    
+    // Mostrar imagen actual
+    document.getElementById('imagen-preview').src = imagen_url;
+    
+    // Scroll hacia el formulario
+    document.querySelector('.form-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function limpiarFormulario() {
+    document.getElementById('form-title').textContent = 'REGISTRO DE PRODUCTO NUEVO';
+    document.getElementById('producto-form').action = "{% url 'inventario:crear_producto' %}";
+    document.getElementById('producto-form').reset();
+    document.getElementById('producto_id').value = '';
+    // Restaurar valores por defecto
+    document.getElementById('stock_minimo').value = '5';
+    document.getElementById('stock_critico').value = '2';
+    // Restaurar imagen por defecto
+    document.getElementById('imagen-preview').src = '/static/images/no-image.png';
+}
 {% endblock %}
