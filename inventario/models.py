@@ -146,3 +146,145 @@ class MovimientoStock(models.Model):
         
     def __str__(self):
         return f"{self.tipo} - {self.producto.codigo_sku} - {self.cantidad} unidades"
+
+
+# Modelos para venta / POS
+class Venta(models.Model):
+    """Cabecera de la venta (comprobante)"""
+    ESTADO_CHOICES = [
+        ('COMPLETADA', 'Completada'),
+        ('ANULADA', 'Anulada'),
+    ]
+    
+    # Folio interno autogenerado (ej: V-0001, V-0002)
+    folio = models.CharField(
+        max_length=50, 
+        unique=True, 
+        editable=False,
+        verbose_name="Folio de Venta",
+        help_text="Folio autogenerado, Ej: V-0001"
+    )
+    
+    fecha_venta = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Venta")
+    
+    # Totales
+    subtotal = models.DecimalField(
+        max_digits=10, 
+        decimal_places=0, 
+        default=0,
+        verbose_name="Subtotal"
+    )
+    
+    total = models.DecimalField(
+        max_digits=10, 
+        decimal_places=0, 
+        default=0,
+        verbose_name="Total"
+    )
+    
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='COMPLETADA',
+        verbose_name="Estado de la Venta"
+    )
+    
+    # Información opcional del cliente
+    cliente_nombre = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="Nombre del Cliente (Opcional)"
+    )
+    
+    observaciones = models.TextField(blank=True, null=True)
+    
+    # Auditoria
+    usuario = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name="Usuario que realizó la venta"
+    )
+    
+    class Meta:
+        verbose_name = "Venta"
+        verbose_name_plural = "Ventas"
+        ordering = ['-fecha_venta']
+    
+    def __str__(self):
+        return f"{self.folio} - ${self.total} - {self.fecha_venta.strftime('%d/%m/%Y %H:%M')}"
+    
+    def save(self, *args, **kwargs):
+        """Generar folio autoincremental si es nueva venta"""
+        if not self.folio:
+            # Obtener la última venta
+            ultima_venta = Venta.objects.all().order_by('id').last()
+            if ultima_venta and ultima_venta.folio:
+                try:
+                    ultimo_numero = int(ultima_venta.folio.split('-')[-1])
+                    nuevo_numero = ultimo_numero + 1
+                except:
+                    nuevo_numero = 1
+            else:
+                nuevo_numero = 1
+            
+            # Generar folio con formato V-0001, V-0002, etc.
+            self.folio = f"V-{nuevo_numero:04d}"
+        
+        super().save(*args, **kwargs)
+    
+    def calcular_totales(self):
+        """Calcular subtotal y total basado en los detalles"""
+        detalles = self.detalles.all()
+        self.subtotal = sum(detalle.subtotal for detalle in detalles)
+        self.total = self.subtotal  # Por ahora sin descuentos ni impuestos
+        self.save()
+
+
+class DetalleVenta(models.Model):
+    """Detalle de la venta (productos vendidos)"""
+    venta = models.ForeignKey(
+        Venta,
+        on_delete=models.CASCADE,
+        related_name='detalles',
+        verbose_name="Venta"
+    )
+    
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.PROTECT,
+        verbose_name="Producto"
+    )
+    
+    cantidad = models.IntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name="Cantidad"
+    )
+    
+    precio_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        verbose_name="Precio Unitario",
+        help_text="Precio al momento de la venta"
+    )
+    
+    subtotal = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        verbose_name="Subtotal",
+        help_text="Cantidad × Precio Unitario"
+    )
+    
+    class Meta:
+        verbose_name = "Detalle de Venta"
+        verbose_name_plural = "Detalles de Venta"
+        ordering = ['id']
+    
+    def __str__(self):
+        return f"{self.producto.nombre} × {self.cantidad} = ${self.subtotal}"
+    
+    def save(self, *args, **kwargs):
+        """Calcular subtotal automáticamente"""
+        self.subtotal = self.cantidad * self.precio_unitario
+        super().save(*args, **kwargs)

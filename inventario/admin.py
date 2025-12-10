@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Categoria, Subcategoria, Producto, MovimientoStock
+from .models import Categoria, Subcategoria, Producto, MovimientoStock, Venta, DetalleVenta
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
@@ -76,3 +76,42 @@ class MovimientoStockAdmin(admin.ModelAdmin):
     list_filter = ['tipo', 'fecha_movimiento']
     search_fields = ['producto__codigo_sku', 'producto__nombre', 'motivo']
     readonly_fields = ['fecha_movimiento']
+
+
+# Admin para ventas
+class DetalleVentaInline(admin.TabularInline):
+    model = DetalleVenta
+    extra = 0
+    readonly_fields = ['subtotal']
+    fields = ['producto', 'cantidad', 'precio_unitario', 'subtotal']
+
+@admin.register(Venta)
+class VentaAdmin(admin.ModelAdmin):
+    list_display = ['folio', 'fecha_venta', 'cliente_nombre', 'subtotal', 'total', 'estado', 'usuario']
+    list_filter = ['estado', 'fecha_venta']
+    search_fields = ['folio', 'cliente_nombre']
+    readonly_fields = ['folio', 'fecha_venta', 'subtotal', 'total']
+    inlines = [DetalleVentaInline]
+    
+    fieldsets = (
+        ('Información de Venta', {
+            'fields': ('folio', 'fecha_venta', 'estado', 'usuario')
+        }),
+        ('Cliente', {
+            'fields': ('cliente_nombre',)
+        }),
+        ('Totales', {
+            'fields': ('subtotal', 'total')
+        }),
+        ('Observaciones', {
+            'fields': ('observaciones',),
+            'classes': ('collapse',)
+        }),
+    )
+
+@admin.register(DetalleVenta)
+class DetalleVentaAdmin(admin.ModelAdmin):
+    list_display = ['venta', 'producto', 'cantidad', 'precio_unitario', 'subtotal']
+    list_filter = ['venta__fecha_venta']
+    search_fields = ['venta__folio', 'producto__nombre']
+    readonly_fields = ['subtotal']

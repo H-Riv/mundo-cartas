@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Producto, Categoria, Subcategoria, MovimientoStock
+from .models import Producto, Categoria, Subcategoria, MovimientoStock, Venta, DetalleVenta
+from django.http import JsonResponse
+from django.db.models import Q
+from decimal import Decimal
 #Impots para leer Excels
 import pandas as pd
 from django.http import HttpResponse
@@ -421,3 +424,186 @@ def descargar_plantilla(request):
     
     wb.save(response)
     return response
+
+
+# ====================================
+# Vistas POS / Ventas
+# ====================================
+
+def pos(request):
+    """Vista principal del POS (Punto de Venta)"""
+    # Obtener productos activos con stock disponible
+    productos = Producto.objects.filter(activo=True, stock__gt=0).select_related('categoria', 'subcategoria')
+    categorias = Categoria.objects.filter(activo=True)
+    
+    context = {
+        'productos': productos,
+        'categorias': categorias,
+    }
+    
+    return render(request, 'inventario/pos.html', context)
+
+
+def buscar_producto_ajax(request):
+    """Búsqueda de productos vía AJAX para el POS"""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'productos': []})
+    
+    # Buscar por codigo SKU o nombre
+    productos = Producto.objects.filter(
+        Q(codigo_sku__icontains=query) | Q(nombre__icontains=query),
+        activo=True,
+        stock__gt=0
+    ).select_related('categoria', 'subcategoria')[:10]
+    
+    # Convertir a JSON
+    productos_data = []
+    for p in productos:
+        productos_data.append({
+            'id': p.id,
+            'codigo_sku': p.codigo_sku,
+            'nombre': p.nombre,
+            'precio': float(p.precio),
+            'stock': p.stock,
+            'imagen_url': p.get_imagen_url(),
+            'categoria': p.categoria.nombre,
+            'subcategoria': p.subcategoria.nombre if p.subcategoria else '',
+        })
+    
+    return JsonResponse({'productos': productos_data})
+
+
+def procesar_venta(request):
+    """Procesar una venta desde el POS"""
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            
+            carrito = data.get('carrito', [])
+            cliente_nombre = data.get('cliente_nombre', '').strip()
+            
+            if not carrito:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'El carrito está vacío'
+                }, status=400)
+            
+            # Validar stock antes de procesar
+            for item in carrito:
+                producto = Producto.objects.get(id=item['producto_id'])
+                if producto.stock < item['cantidad']:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}'
+                    }, status=400)
+            
+            # Crear la venta
+            venta = Venta.objects.create(
+                cliente_nombre=cliente_nombre if cliente_nombre else None,
+                usuario=request.user if request.user.is_authenticated else None
+            )
+            
+            # Crear detalles y reducir stock
+            for item in carrito:
+                producto = Producto.objects.get(id=item['producto_id'])
+                
+                # Crear detalle de venta
+                DetalleVenta.objects.create(
+                    venta=venta,
+                    producto=producto,
+                    cantidad=item['cantidad'],
+                    precio_unitario=producto.precio
+                )
+                
+                # Reducir stock
+                stock_anterior = producto.stock
+                producto.stock -= item['cantidad']
+                producto.save()
+                
+                # Registrar movimiento de stock
+                MovimientoStock.objects.create(
+                    producto=producto,
+                    tipo='VENTA',
+                    cantidad=item['cantidad'],
+                    stock_anterior=stock_anterior,
+                    stock_nuevo=producto.stock,
+                    motivo=f'Venta {venta.folio}',
+                    usuario=request.user if request.user.is_authenticated else None
+                )
+            
+            # Calcular totales
+            venta.calcular_totales()
+            
+            return JsonResponse({
+                'success': True,
+                'venta_id': venta.id,
+                'folio': venta.folio,
+                'total': float(venta.total)
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Método no permitido'
+    }, status=405)
+
+
+def lista_ventas(request):
+    """Lista de ventas realizadas"""
+    ventas = Venta.objects.all().select_related('usuario').prefetch_related('detalles__producto')
+    
+    # Filtros
+    estado_filtro = request.GET.get('estado')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    busqueda = request.GET.get('busqueda')
+    
+    if estado_filtro:
+        ventas = ventas.filter(estado=estado_filtro)
+    
+    if fecha_desde:
+        ventas = ventas.filter(fecha_venta__date__gte=fecha_desde)
+    
+    if fecha_hasta:
+        ventas = ventas.filter(fecha_venta__date__lte=fecha_hasta)
+    
+    if busqueda:
+        ventas = ventas.filter(
+            Q(folio__icontains=busqueda) | 
+            Q(cliente_nombre__icontains=busqueda)
+        )
+    
+    # Estadísticas
+    total_ventas = ventas.filter(estado='COMPLETADA').count()
+    total_monto = sum(v.total for v in ventas.filter(estado='COMPLETADA'))
+    ventas_anuladas = ventas.filter(estado='ANULADA').count()
+    
+    context = {
+        'ventas': ventas,
+        'total_ventas': total_ventas,
+        'total_monto': total_monto,
+        'ventas_anuladas': ventas_anuladas,
+    }
+    
+    return render(request, 'inventario/lista_ventas.html', context)
+
+
+def comprobante_venta(request, pk):
+    """Generar comprobante de venta (por ahora HTML, luego PDF)"""
+    venta = get_object_or_404(Venta, pk=pk)
+    detalles = venta.detalles.all().select_related('producto')
+    
+    context = {
+        'venta': venta,
+        'detalles': detalles,
+    }
+    
+    return render(request, 'inventario/comprobante_venta.html', context)
