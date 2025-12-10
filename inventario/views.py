@@ -1,3 +1,4 @@
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Producto, Categoria, Subcategoria, MovimientoStock, Venta, DetalleVenta
@@ -427,21 +428,39 @@ def descargar_plantilla(request):
 
 
 # ====================================
-# Vistas POS / Ventas
+# Vistas Pos / Ventas
 # ====================================
 
 def pos(request):
     """Vista principal del POS (Punto de Venta)"""
-    # Obtener productos activos con stock disponible
-    productos = Producto.objects.filter(activo=True, stock__gt=0).select_related('categoria', 'subcategoria')
+    
+    busqueda = request.GET.get("busqueda", "").strip()
+    categoria = request.GET.get("categoria", "").strip()
+
+    # Productos activos y con stock
+    productos = Producto.objects.filter(
+        activo=True,
+        stock__gt=0
+    ).select_related("categoria", "subcategoria")
+
+    # Filtro 1: búsqueda por nombre o SKU
+    if busqueda:
+        productos = productos.filter(
+            Q(nombre__icontains=busqueda) |
+            Q(codigo_sku__icontains=busqueda)
+        )
+
+    # Filtro 2: categoría
+    if categoria:
+        productos = productos.filter(categoria_id=categoria)
+
     categorias = Categoria.objects.filter(activo=True)
-    
+
     context = {
-        'productos': productos,
-        'categorias': categorias,
+        "productos": productos,
+        "categorias": categorias,
     }
-    
-    return render(request, 'inventario/pos.html', context)
+    return render(request, "inventario/pos.html", context)
 
 
 def buscar_producto_ajax(request):
@@ -451,7 +470,7 @@ def buscar_producto_ajax(request):
     if len(query) < 2:
         return JsonResponse({'productos': []})
     
-    # Buscar por codigo SKU o nombre
+    # Buscar por código SKU o nombre
     productos = Producto.objects.filter(
         Q(codigo_sku__icontains=query) | Q(nombre__icontains=query),
         activo=True,
@@ -581,7 +600,7 @@ def lista_ventas(request):
             Q(cliente_nombre__icontains=busqueda)
         )
     
-    # Estadísticas
+    # Estadisticas
     total_ventas = ventas.filter(estado='COMPLETADA').count()
     total_monto = sum(v.total for v in ventas.filter(estado='COMPLETADA'))
     ventas_anuladas = ventas.filter(estado='ANULADA').count()
@@ -607,3 +626,48 @@ def comprobante_venta(request, pk):
     }
     
     return render(request, 'inventario/comprobante_venta.html', context)
+
+
+def anular_venta(request, pk):
+    """Anular una venta y reponer el stock"""
+    venta = get_object_or_404(Venta, pk=pk)
+    
+    if request.method == 'POST':
+        # Verificar que no este ya anulada
+        if venta.estado == 'ANULADA':
+            messages.warning(request, f'La venta {venta.folio} ya está anulada')
+            return redirect('inventario:lista_ventas')
+        
+        try:
+            # Reponer stock de cada producto
+            for detalle in venta.detalles.all():
+                producto = detalle.producto
+                stock_anterior = producto.stock
+                producto.stock += detalle.cantidad
+                producto.save()
+                
+                # Registrar movimiento de anulación
+                MovimientoStock.objects.create(
+                    producto=producto,
+                    tipo='ANULACION',
+                    cantidad=detalle.cantidad,
+                    stock_anterior=stock_anterior,
+                    stock_nuevo=producto.stock,
+                    motivo=f'Anulación de venta {venta.folio}',
+                    observaciones=f'Se repone stock por anulación de venta',
+                    usuario=request.user if request.user.is_authenticated else None
+                )
+            
+            # Marcar venta como anulada
+            venta.estado = 'ANULADA'
+            venta.save()
+            
+            messages.success(request, f'Venta {venta.folio} anulada exitosamente. Stock repuesto.')
+            
+        except Exception as e:
+            messages.error(request, f'Error al anular venta: {str(e)}')
+        
+        return redirect('inventario:lista_ventas')
+    
+    # Si no es POST, mostrar confirmacion
+    return redirect('inventario:lista_ventas')

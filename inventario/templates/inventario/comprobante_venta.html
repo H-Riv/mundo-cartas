@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante {{ venta.folio }} - Mundo Cartas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .comprobante {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border: 2px solid #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px dashed #333;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .tienda-info {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #666;
+        }
+        
+        .folio {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border: 1px solid #333;
+            text-align: center;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+        }
+        
+        .separator {
+            border-bottom: 2px dashed #333;
+            margin: 20px 0;
+        }
+        
+        .productos {
+            margin: 20px 0;
+        }
+        
+        .producto-item {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .producto-item:last-child {
+            border-bottom: none;
+        }
+        
+        .producto-nombre {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .producto-detalle {
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+        }
+        
+        .producto-subtotal {
+            font-size: 13px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
+        .totales {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #333;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .total-final {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 15px;
+            background: #f0f0f0;
+            border: 2px solid #333;
+            margin-top: 15px;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #333;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .gracias {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .print-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 30px;
+            background: #4472c4;
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        .print-button:hover {
+            background: #3a5ba0;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            
+            .comprobante {
+                max-width: 100%;
+                border: none;
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="comprobante">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🃏 MUNDO CARTAS</div>
+            <div class="tienda-info">
+                Sistema de Gestión de Inventario<br>
+                Arica, Chile<br>
+                Teléfono: (contacto pendiente)
+            </div>
+        </div>
+        
+        <!-- Folio -->
+        <div class="folio">
+            COMPROBANTE DE VENTA<br>
+            {{ venta.folio }}
+        </div>
+        
+        <!-- Información de la venta -->
+        <div class="info-row">
+            <span class="info-label">Fecha:</span>
+            <span>{{ venta.fecha_venta|date:"d/m/Y" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Hora:</span>
+            <span>{{ venta.fecha_venta|date:"H:i:s" }}</span>
+        </div>
+        {% if venta.cliente_nombre %}
+        <div class="info-row">
+            <span class="info-label">Cliente:</span>
+            <span>{{ venta.cliente_nombre }}</span>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <span class="info-label">Atendido por:</span>
+            <span>{{ venta.usuario.username|default:"Sistema" }}</span>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <!-- Productos -->
+        <div class="productos">
+            <div style="font-weight: bold; margin-bottom: 15px; font-size: 14px;">PRODUCTOS:</div>
+            
+            {% for detalle in detalles %}
+            <div class="producto-item">
+                <div class="producto-nombre">{{ detalle.producto.nombre }}</div>
+                <div class="producto-detalle">
+                    <span>{{ detalle.cantidad }} x ${{ detalle.precio_unitario|floatformat:0 }}</span>
+                    <span>{{ detalle.producto.codigo_sku }}</span>
+                </div>
+                <div class="producto-subtotal">
+                    ${{ detalle.subtotal|floatformat:0 }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="separator"></div>
+        
+        <!-- Totales -->
+        <div class="totales">
+            <div class="total-row">
+                <span>Subtotal (Neto):</span>
+                <span>${{ venta.subtotal|floatformat:0 }}</span>
+            </div>
+            
+            <div class="total-row">
+                <span>IVA (19%):</span>
+                <span>${{ venta.iva|floatformat:0 }}</span>
+            </div>
+            
+            <div class="total-row total-final">
+                <span>TOTAL:</span>
+                <span>${{ venta.total|floatformat:0 }}</span>
+            </div>
+        </div>
+        
+        {% if venta.observaciones %}
+        <div style="margin-top: 20px; padding: 10px; background: #f0f0f0; border: 1px solid #ddd; font-size: 11px;">
+            <strong>Observaciones:</strong><br>
+            {{ venta.observaciones }}
+        </div>
+        {% endif %}
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="gracias">¡GRACIAS POR TU COMPRA!</div>
+            <div>
+                Este documento es un comprobante de venta interno.<br>
+                No válido como factura tributaria.<br>
+                <br>
+                <strong>Estado:</strong> 
+                {% if venta.estado == 'COMPLETADA' %}
+                ✓ COMPLETADA
+                {% else %}
+                ✕ ANULADA
+                {% endif %}
+            </div>
+            <div style="margin-top: 15px; font-size: 10px;">
+                Generado: {% now "d/m/Y H:i:s" %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botón de impresión (se oculta al imprimir) -->
+    <button class="print-button" onclick="window.print()">
+        🖨️ IMPRIMIR COMPROBANTE
+    </button>
+</body>
+</html>

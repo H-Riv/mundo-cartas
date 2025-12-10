@@ -337,32 +337,44 @@
         <div class="section-title">PRODUCTOS DISPONIBLES</div>
         
         <div class="search-box">
-            <input type="text" 
-                   id="search-input" 
-                   class="search-input" 
-                   placeholder="🔍 Buscar por código o nombre..."
-                   autocomplete="off">
+            <form method="GET" style="display: flex; gap: 10px;">
+                <input type="text" 
+                       name="busqueda"
+                       class="search-input" 
+                       placeholder="🔍 Buscar por código o nombre..."
+                       value="{{ request.GET.busqueda }}"
+                       autocomplete="off"
+                       style="flex: 1;">
+                <button type="submit" class="btn-filter" style="padding: 12px 20px;">
+                    🔍 Buscar
+                </button>
+            </form>
         </div>
         
-        <!-- NUEVOS FILTROS -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-            <select id="filtro-categoria" class="form-select" onchange="aplicarFiltros()">
-                <option value="">Todas las categorías</option>
-                {% for categoria in categorias %}
-                <option value="{{ categoria.nombre }}">{{ categoria.nombre }}</option>
-                {% endfor %}
-            </select>
+        <!-- FILTROS -->
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 20px;">
+            <form method="GET" style="display: contents;">
+                <!-- Mantener la busqueda al cambiar categoría -->
+                <input type="hidden" name="busqueda" value="{{ request.GET.busqueda }}">
+
+                <select name="categoria" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:"s" %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
             
-            <button onclick="limpiarFiltros()" class="btn btn-secondary" style="padding: 8px;">
+            <a href="{% url 'inventario:pos' %}" class="btn btn-secondary" style="padding: 8px 20px; text-decoration: none; display: flex; align-items: center; justify-content: center;">
                 🔄 Limpiar Filtros
-            </button>
+            </a>
         </div>
         
         <div class="productos-grid" id="productos-grid">
             {% for producto in productos %}
             <div class="producto-card" 
-                 data-categoria="{{ producto.categoria.nombre }}"
-                 data-subcategoria="{{ producto.subcategoria.nombre|default:'' }}"
                  onclick="agregarAlCarrito({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.precio }}, {{ producto.stock }}, '{{ producto.get_imagen_url|escapejs }}', '{{ producto.codigo_sku|escapejs }}')">
                 <img src="{{ producto.get_imagen_url }}" alt="{{ producto.nombre }}" class="producto-imagen">
                 <div class="producto-sku">{{ producto.codigo_sku }}</div>
@@ -370,6 +382,18 @@
                 <div class="producto-precio">${{ producto.precio|floatformat:0 }}</div>
                 <div class="producto-stock">
                     Stock: <strong class="{{ producto.get_clase_css_stock }}">{{ producto.stock }}</strong>
+                </div>
+            </div>
+            {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #999;">
+                <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
+                <div style="font-size: 16px; font-weight: 600;">No se encontraron productos</div>
+                <div style="font-size: 13px; margin-top: 5px;">
+                    {% if request.GET.busqueda or request.GET.categoria %}
+                    Intenta con otros términos de búsqueda o <a href="{% url 'inventario:pos' %}" style="color: #4472c4;">limpia los filtros</a>
+                    {% else %}
+                    No hay productos disponibles con stock
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -400,8 +424,12 @@
             
             <div class="totales" id="totales" style="display: none;">
                 <div class="total-row">
-                    <span>Subtotal:</span>
+                    <span>Subtotal (Neto):</span>
                     <span id="subtotal">$0</span>
+                </div>
+                <div class="total-row">
+                    <span>IVA (19%):</span>
+                    <span id="iva">$0</span>
                 </div>
                 <div class="total-row total-final">
                     <span>TOTAL:</span>
@@ -492,10 +520,12 @@ function renderizarCarrito() {
     
     // Calcular totales
     const subtotal = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
-    const total = subtotal;
+    const iva = Math.round(subtotal * 0.19);
+    const total = subtotal + iva;
     
-    document.getElementById('subtotal').textContent = `$${subtotal.toLocaleString('es-CL')}`;
-    document.getElementById('total').textContent = `$${total.toLocaleString('es-CL')}`;
+    document.getElementById('subtotal').textContent = `${subtotal.toLocaleString('es-CL')}`;
+    document.getElementById('iva').textContent = `${iva.toLocaleString('es-CL')}`;
+    document.getElementById('total').textContent = `${total.toLocaleString('es-CL')}`;
 }
 
 // Cambiar cantidad
@@ -606,10 +636,21 @@ async function procesarVenta() {
 // Búsqueda de productos
 let timeoutBusqueda;
 let productosOriginales = null;
+let todosLosProductos = []; // Array para almacenar todos los productos
 
 // Guardar productos originales al cargar
 document.addEventListener('DOMContentLoaded', function() {
     productosOriginales = document.getElementById('productos-grid').innerHTML;
+    
+    // Guardar array de productos para restaurar despues de búsquedas
+    const productCards = document.querySelectorAll('.producto-card');
+    productCards.forEach(card => {
+        todosLosProductos.push({
+            html: card.outerHTML,
+            categoria: card.getAttribute('data-categoria'),
+            subcategoria: card.getAttribute('data-subcategoria')
+        });
+    });
 });
 
 document.getElementById('search-input').addEventListener('input', function(e) {
@@ -683,13 +724,20 @@ function aplicarFiltros() {
 
 // Limpiar filtros
 function limpiarFiltros() {
+    // Limpiar campos
     document.getElementById('filtro-categoria').value = '';
     document.getElementById('search-input').value = '';
-    document.getElementById('productos-grid').innerHTML = productosOriginales;
     
-    const cards = document.querySelectorAll('.producto-card');
-    cards.forEach(card => {
-        card.style.display = 'block';
-    });
+    // Restaurar TODOS los productos originales
+    const grid = document.getElementById('productos-grid');
+    grid.innerHTML = productosOriginales;
+    
+    // Asegurarse de que todas las cards estén visibles
+    setTimeout(() => {
+        const cards = document.querySelectorAll('.producto-card');
+        cards.forEach(card => {
+            card.style.display = 'block';
+        });
+    }, 10);
 }
 {% endblock %}

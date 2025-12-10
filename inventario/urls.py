@@ -19,4 +19,5 @@ urlpatterns = [
     path('pos/procesar-venta/', views.procesar_venta, name='procesar_venta'),
     path('ventas/', views.lista_ventas, name='lista_ventas'),
     path('ventas/<int:pk>/comprobante/', views.comprobante_venta, name='comprobante_venta'),
+    path('ventas/<int:pk>/anular/', views.anular_venta, name='anular_venta'),
 ]

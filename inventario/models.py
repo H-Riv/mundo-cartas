@@ -46,7 +46,7 @@ class Producto(models.Model):
     subcategoria = models.ForeignKey(Subcategoria, on_delete=models.PROTECT, related_name='productos', verbose_name="Subcategoria (Franquicia)", null=True, blank=True)
     descripcion = models.TextField(blank=True, null=True, verbose_name="Descripcion")
     
-    # Campo de imagen
+    #Campo de imagen
     imagen = models.ImageField(
         upload_to='productos/',
         blank=True,
@@ -148,7 +148,7 @@ class MovimientoStock(models.Model):
         return f"{self.tipo} - {self.producto.codigo_sku} - {self.cantidad} unidades"
 
 
-# Modelos para venta / POS
+# Modelo de Venta / POS
 class Venta(models.Model):
     """Cabecera de la venta (comprobante)"""
     ESTADO_CHOICES = [
@@ -172,7 +172,14 @@ class Venta(models.Model):
         max_digits=10, 
         decimal_places=0, 
         default=0,
-        verbose_name="Subtotal"
+        verbose_name="Subtotal (neto)"
+    )
+    
+    iva = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        default=0,
+        verbose_name="IVA (19%)"
     )
     
     total = models.DecimalField(
@@ -199,7 +206,7 @@ class Venta(models.Model):
     
     observaciones = models.TextField(blank=True, null=True)
     
-    # Auditoria
+    # Auditoría
     usuario = models.ForeignKey(
         'auth.User',
         on_delete=models.SET_NULL,
@@ -235,10 +242,16 @@ class Venta(models.Model):
         super().save(*args, **kwargs)
     
     def calcular_totales(self):
-        """Calcular subtotal y total basado en los detalles"""
+        """Calcular subtotal, IVA y total basado en los detalles"""
+        from decimal import Decimal
         detalles = self.detalles.all()
         self.subtotal = sum(detalle.subtotal for detalle in detalles)
-        self.total = self.subtotal  # Por ahora sin descuentos ni impuestos
+        
+        # Calcular IVA (19%)
+        self.iva = int(self.subtotal * Decimal('0.19'))
+        
+        # Total = Subtotal + IVA
+        self.total = self.subtotal + self.iva
         self.save()
 
 

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de Ventas - Mundo Cartas{% endblock %}
+
+{% block page_header %}Historial de Ventas{% endblock %}
+
+{% block toolbar %}
+<a href="{% url 'inventario:lista_productos' %}" class="toolbar-btn">📋 Inventario</a>
+<a href="{% url 'inventario:pos' %}" class="toolbar-btn">🛒 POS</a>
+<a href="{% url 'inventario:lista_ventas' %}" class="toolbar-btn active">📊 Ventas</a>
+<a href="{% url 'admin:index' %}" class="toolbar-btn">⚙️ Admin</a>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <div class="section-title">REGISTRO DE VENTAS</div>
+    
+    <!-- Filtros -->
+    <div class="filters-bar">
+        <form method="GET" class="filters-form" style="grid-template-columns: repeat(4, 1fr) auto;">
+            <div class="filter-group">
+                <label class="filter-label">Buscar:</label>
+                <input type="text" name="busqueda" class="filter-input" 
+                       placeholder="Folio o cliente..." value="{{ request.GET.busqueda }}">
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Estado:</label>
+                <select name="estado" class="filter-select">
+                    <option value="">Todos</option>
+                    <option value="COMPLETADA" {% if request.GET.estado == 'COMPLETADA' %}selected{% endif %}>Completadas</option>
+                    <option value="ANULADA" {% if request.GET.estado == 'ANULADA' %}selected{% endif %}>Anuladas</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Desde:</label>
+                <input type="date" name="fecha_desde" class="filter-input" value="{{ request.GET.fecha_desde }}">
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Hasta:</label>
+                <input type="date" name="fecha_hasta" class="filter-input" value="{{ request.GET.fecha_hasta }}">
+            </div>
+            
+            <button type="submit" class="btn-filter">🔍 Filtrar</button>
+        </form>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_ventas }}</div>
+            <div class="stat-label">Ventas Completadas</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #28a745;">${{ total_monto|floatformat:0 }}</div>
+            <div class="stat-label">Monto Total</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ ventas.count }}</div>
+            <div class="stat-label">Total Registros</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #dc3545;">{{ ventas_anuladas }}</div>
+            <div class="stat-label">Ventas Anuladas</div>
+        </div>
+    </div>
+    
+    <!-- Table -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 100px;">FOLIO</th>
+                    <th style="width: 150px;">FECHA/HORA</th>
+                    <th>CLIENTE</th>
+                    <th style="width: 100px;">NETO</th>
+                    <th style="width: 100px;">IVA</th>
+                    <th style="width: 100px;">TOTAL</th>
+                    <th style="width: 100px;">ESTADO</th>
+                    <th style="width: 120px;">USUARIO</th>
+                    <th style="width: 180px;">ACCIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta in ventas %}
+                <tr onclick="toggleDetalleVenta({{ venta.id }})" style="cursor: pointer;">
+                    <td class="col-codigo">{{ venta.folio }}</td>
+                    <td class="col-fecha">{{ venta.fecha_venta|date:"d/m/Y H:i" }}</td>
+                    <td>{{ venta.cliente_nombre|default:"—" }}</td>
+                    <td class="col-precio">${{ venta.subtotal|floatformat:0 }}</td>
+                    <td class="col-precio">${{ venta.iva|floatformat:0 }}</td>
+                    <td class="col-precio" style="font-weight: 700;">${{ venta.total|floatformat:0 }}</td>
+                    <td>
+                        {% if venta.estado == 'COMPLETADA' %}
+                        <span class="badge badge-active">✓ Completada</span>
+                        {% else %}
+                        <span class="badge badge-inactive">✕ Anulada</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ venta.usuario.username|default:"Sistema" }}</td>
+                    <td onclick="event.stopPropagation();">
+                        <div class="action-btns">
+                            <a href="{% url 'inventario:comprobante_venta' venta.id %}" 
+                               target="_blank"
+                               class="btn-icon" 
+                               style="color: #28a745; text-decoration: none;">
+                                🖨️ Imprimir
+                            </a>
+                            {% if venta.estado == 'COMPLETADA' %}
+                            <form method="POST" 
+                                  action="{% url 'inventario:anular_venta' venta.id %}" 
+                                  style="display: inline;"
+                                  onsubmit="return confirm('¿Anular venta {{ venta.folio }}? Se repondrá el stock de los productos.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-icon btn-delete">
+                                    ✕ Anular
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="btn-icon" style="color: #999; cursor: not-allowed;">
+                                ✕ Anulada
+                            </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                <!-- Detalle expandible -->
+                <tr class="detail-row" id="detalle-venta-{{ venta.id }}">
+                    <td colspan="9">
+                        <div class="detail-content">
+                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #4472c4;">
+                                📦 PRODUCTOS VENDIDOS ({{ venta.detalles.count }} items)
+                            </div>
+                            <table style="width: 100%; font-size: 13px;">
+                                <thead style="background: #f8f8f8;">
+                                    <tr>
+                                        <th style="text-align: left; padding: 8px;">PRODUCTO</th>
+                                        <th style="text-align: center; padding: 8px; width: 100px;">CANTIDAD</th>
+                                        <th style="text-align: right; padding: 8px; width: 120px;">PRECIO UNIT.</th>
+                                        <th style="text-align: right; padding: 8px; width: 120px;">SUBTOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for detalle in venta.detalles.all %}
+                                    <tr>
+                                        <td style="padding: 8px;">{{ detalle.producto.nombre }}</td>
+                                        <td style="text-align: center; padding: 8px; font-weight: 600;">{{ detalle.cantidad }}</td>
+                                        <td style="text-align: right; padding: 8px;">${{ detalle.precio_unitario|floatformat:0 }}</td>
+                                        <td style="text-align: right; padding: 8px; font-weight: 700; color: #28a745;">
+                                            ${{ detalle.subtotal|floatformat:0 }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot style="border-top: 2px solid #4472c4;">
+                                    <tr>
+                                        <td colspan="3" style="text-align: right; padding: 12px; font-weight: 700; font-size: 16px;">
+                                            TOTAL:
+                                        </td>
+                                        <td style="text-align: right; padding: 12px; font-weight: 700; font-size: 16px; color: #4472c4;">
+                                            ${{ venta.total|floatformat:0 }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            
+                            {% if venta.observaciones %}
+                            <div style="margin-top: 15px; padding: 10px; background: #fff9e6; border-left: 3px solid #ffc107; font-size: 12px;">
+                                <strong>📝 Observaciones:</strong> {{ venta.observaciones }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
+                        No hay ventas registradas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+function toggleDetalleVenta(ventaId) {
+    const detailRow = document.getElementById(`detalle-venta-${ventaId}`);
+    const mainRow = event.currentTarget;
+    
+    // Toggle la clase show en la fila de detalles
+    detailRow.classList.toggle('show');
+    
+    // Toggle la clase expanded en la fila principal
+    mainRow.classList.toggle('expanded');
+}
+{% endblock %}
