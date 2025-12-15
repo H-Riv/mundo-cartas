@@ -1,11 +1,10 @@
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Producto, Categoria, Subcategoria, MovimientoStock, Venta, DetalleVenta
 from django.http import JsonResponse
 from django.db.models import Q
 from decimal import Decimal
-#Impots para leer Excels
+#Imports para leer Excels
 import pandas as pd
 from django.http import HttpResponse
 from openpyxl import Workbook
@@ -56,28 +55,94 @@ def crear_producto(request):
     
     if request.method == 'POST':
         try:
+            nombre = request.POST.get('nombre', '').strip()
+            precio = request.POST.get('precio')
+            stock = request.POST.get('stock')
+            stock_minimo = request.POST.get('stock_minimo', 5)
+            stock_critico = request.POST.get('stock_critico', 2)
+            categoria_id = request.POST.get('categoria')
+            
+            if not nombre:
+                messages.error(request, 'El nombre del producto es obligatorio')
+                return redirect('inventario:lista_productos')
+            
+            if not categoria_id:
+                messages.error(request, 'Debe seleccionar una categoría')
+                return redirect('inventario:lista_productos')
+            
+            try:
+                precio = float(precio)
+                if precio <= 0:
+                    messages.error(request, 'El precio debe ser mayor a 0')
+                    return redirect('inventario:lista_productos')
+            except (ValueError, TypeError):
+                messages.error(request, 'El precio debe ser un número válido')
+                return redirect('inventario:lista_productos')
+            
+            try:
+                stock = int(stock)
+                if stock < 0:
+                    messages.error(request, 'El stock no puede ser negativo')
+                    return redirect('inventario:lista_productos')
+            except (ValueError, TypeError):
+                messages.error(request, 'El stock debe ser un número válido')
+                return redirect('inventario:lista_productos')
+            
+            try:
+                stock_minimo = int(stock_minimo)
+                stock_critico = int(stock_critico)
+                
+                if stock_minimo < 0 or stock_critico < 0:
+                    messages.error(request, 'Los valores de stock mínimo y crítico no pueden ser negativos')
+                    return redirect('inventario:lista_productos')
+                
+                if stock_critico > stock_minimo:
+                    messages.error(request, 'El stock crítico no puede ser mayor al stock mínimo')
+                    return redirect('inventario:lista_productos')
+                    
+            except (ValueError, TypeError):
+                messages.error(request, 'Los valores de stock mínimo y crítico deben ser números válidos')
+                return redirect('inventario:lista_productos')
+            
+            try:
+                categoria = Categoria.objects.get(id=categoria_id, activo=True)
+            except Categoria.DoesNotExist:
+                messages.error(request, 'La categoría seleccionada no es válida')
+                return redirect('inventario:lista_productos')
+            
+            subcategoria_id = request.POST.get('subcategoria')
+            if subcategoria_id:
+                try:
+                    subcategoria = Subcategoria.objects.get(id=subcategoria_id, activo=True)
+                except Subcategoria.DoesNotExist:
+                    messages.error(request, 'La subcategoría seleccionada no es válida')
+                    return redirect('inventario:lista_productos')
+            else:
+                subcategoria = None
+            
             producto = Producto(
-                nombre=request.POST.get('nombre'),
-                categoria_id=request.POST.get('categoria'),
-                subcategoria_id=request.POST.get('subcategoria') if request.POST.get('subcategoria') else None,
-                descripcion=request.POST.get('descripcion'),
-                precio=request.POST.get('precio'),
-                stock=request.POST.get('stock'),
-                stock_minimo=request.POST.get('stock_minimo', 5),
-                stock_critico=request.POST.get('stock_critico', 2),
+                nombre=nombre,
+                categoria=categoria,
+                subcategoria=subcategoria,
+                descripcion=request.POST.get('descripcion', '').strip(),
+                precio=precio,
+                stock=stock,
+                stock_minimo=stock_minimo,
+                stock_critico=stock_critico,
             )
             
-            # Manejar la imagen si fue subida
             if 'imagen' in request.FILES:
                 producto.imagen = request.FILES['imagen']
             
             producto.save()
-            messages.success(request, f'Producto {producto.codigo_sku} creado exitosamente!')
+            messages.success(request, f'✓ Producto {producto.codigo_sku} creado exitosamente')
             return redirect('inventario:lista_productos')
-        except Exception as e:
-            messages.error(request, f'Error al crear producto {str(e)}')
             
-        return redirect('inventario:lista_productos')
+        except Exception as e:
+            messages.error(request, f'Error al crear producto: {str(e)}')
+            return redirect('inventario:lista_productos')
+    
+    return redirect('inventario:lista_productos')
     
 def editar_producto(request, pk):
     """Editar producto existente"""
@@ -85,25 +150,92 @@ def editar_producto(request, pk):
     
     if request.method == 'POST':
         try:
-            producto.nombre = request.POST.get('nombre')
-            producto.categoria_id = request.POST.get('categoria')
-            producto.subcategoria_id = request.POST.get('subcategoria') if request.POST.get('subcategoria') else None
-            producto.descripcion = request.POST.get('descripcion')
-            producto.precio = request.POST.get('precio')
-            producto.stock = request.POST.get('stock')
-            producto.stock_minimo = request.POST.get('stock_minimo', 5)
-            producto.stock_critico = request.POST.get('stock_critico', 2)
+            nombre = request.POST.get('nombre', '').strip()
+            precio = request.POST.get('precio')
+            stock = request.POST.get('stock')
+            stock_minimo = request.POST.get('stock_minimo', 5)
+            stock_critico = request.POST.get('stock_critico', 2)
+            categoria_id = request.POST.get('categoria')
             
-            # Manejar la imagen si fue subida
+            if not nombre:
+                messages.error(request, 'El nombre del producto es obligatorio')
+                return redirect('inventario:lista_productos')
+            
+            if not categoria_id:
+                messages.error(request, 'Debe seleccionar una categoría')
+                return redirect('inventario:lista_productos')
+            
+            try:
+                precio = float(precio)
+                if precio <= 0:
+                    messages.error(request, 'El precio debe ser mayor a 0')
+                    return redirect('inventario:lista_productos')
+            except (ValueError, TypeError):
+                messages.error(request, 'El precio debe ser un número válido')
+                return redirect('inventario:lista_productos')
+            
+            try:
+                stock = int(stock)
+                if stock < 0:
+                    messages.error(request, 'El stock no puede ser negativo')
+                    return redirect('inventario:lista_productos')
+            except (ValueError, TypeError):
+                messages.error(request, 'El stock debe ser un número válido')
+                return redirect('inventario:lista_productos')
+
+            try:
+                stock_minimo = int(stock_minimo)
+                stock_critico = int(stock_critico)
+                
+                if stock_minimo < 0 or stock_critico < 0:
+                    messages.error(request, 'Los valores de stock mínimo y crítico no pueden ser negativos')
+                    return redirect('inventario:lista_productos')
+                
+                if stock_critico > stock_minimo:
+                    messages.error(request, 'El stock crítico no puede ser mayor al stock mínimo')
+                    return redirect('inventario:lista_productos')
+                    
+            except (ValueError, TypeError):
+                messages.error(request, 'Los valores de stock mínimo y crítico deben ser números válidos')
+                return redirect('inventario:lista_productos')
+            
+            try:
+                categoria = Categoria.objects.get(id=categoria_id, activo=True)
+            except Categoria.DoesNotExist:
+                messages.error(request, 'La categoría seleccionada no es válida')
+                return redirect('inventario:lista_productos')
+            
+            subcategoria_id = request.POST.get('subcategoria')
+            if subcategoria_id:
+                try:
+                    subcategoria = Subcategoria.objects.get(id=subcategoria_id, activo=True)
+                except Subcategoria.DoesNotExist:
+                    messages.error(request, 'La subcategoría seleccionada no es válida')
+                    return redirect('inventario:lista_productos')
+            else:
+                subcategoria = None
+            
+            producto.nombre = nombre
+            producto.categoria = categoria
+            producto.subcategoria = subcategoria
+            producto.descripcion = request.POST.get('descripcion', '').strip()
+            producto.precio = precio
+            producto.stock = stock
+            producto.stock_minimo = stock_minimo
+            producto.stock_critico = stock_critico
+            
             if 'imagen' in request.FILES:
                 producto.imagen = request.FILES['imagen']
             
             producto.save()
             
-            messages.success(request, f'Producto {producto.codigo_sku} actualizado exitosamente')
+            messages.success(request, f'✓ Producto {producto.codigo_sku} actualizado exitosamente')
             return redirect('inventario:lista_productos')
+            
         except Exception as e:
-            messages.error(request, f'Error al actualizar producto {str(e)}')
+            messages.error(request, f'Error al actualizar producto: {str(e)}')
+            return redirect('inventario:lista_productos')
+    
     return redirect('inventario:lista_productos')
 
 def eliminar_producto(request, pk):
@@ -428,39 +560,31 @@ def descargar_plantilla(request):
 
 
 # ====================================
-# Vistas Pos / Ventas
+# VISTAS POS / VENTAS
 # ====================================
 
 def pos(request):
     """Vista principal del POS (Punto de Venta)"""
+    productos = Producto.objects.filter(activo=True, stock__gt=0).select_related('categoria', 'subcategoria')
+    categorias = Categoria.objects.filter(activo=True)
     
-    busqueda = request.GET.get("busqueda", "").strip()
-    categoria = request.GET.get("categoria", "").strip()
-
-    # Productos activos y con stock
-    productos = Producto.objects.filter(
-        activo=True,
-        stock__gt=0
-    ).select_related("categoria", "subcategoria")
-
-    # Filtro 1: búsqueda por nombre o SKU
+    busqueda = request.GET.get('busqueda')
+    categoria_filtro = request.GET.get('categoria')
+    
     if busqueda:
         productos = productos.filter(
-            Q(nombre__icontains=busqueda) |
-            Q(codigo_sku__icontains=busqueda)
+            Q(codigo_sku__icontains=busqueda) | Q(nombre__icontains=busqueda)
         )
-
-    # Filtro 2: categoría
-    if categoria:
-        productos = productos.filter(categoria_id=categoria)
-
-    categorias = Categoria.objects.filter(activo=True)
-
+    
+    if categoria_filtro:
+        productos = productos.filter(categoria_id=categoria_filtro)
+    
     context = {
-        "productos": productos,
-        "categorias": categorias,
+        'productos': productos,
+        'categorias': categorias,
     }
-    return render(request, "inventario/pos.html", context)
+    
+    return render(request, 'inventario/pos.html', context)
 
 
 def buscar_producto_ajax(request):
@@ -600,7 +724,7 @@ def lista_ventas(request):
             Q(cliente_nombre__icontains=busqueda)
         )
     
-    # Estadisticas
+    # Estadísticas
     total_ventas = ventas.filter(estado='COMPLETADA').count()
     total_monto = sum(v.total for v in ventas.filter(estado='COMPLETADA'))
     ventas_anuladas = ventas.filter(estado='ANULADA').count()
@@ -633,7 +757,6 @@ def anular_venta(request, pk):
     venta = get_object_or_404(Venta, pk=pk)
     
     if request.method == 'POST':
-        # Verificar que no este ya anulada
         if venta.estado == 'ANULADA':
             messages.warning(request, f'La venta {venta.folio} ya está anulada')
             return redirect('inventario:lista_ventas')
@@ -668,6 +791,4 @@ def anular_venta(request, pk):
             messages.error(request, f'Error al anular venta: {str(e)}')
         
         return redirect('inventario:lista_ventas')
-    
-    # Si no es POST, mostrar confirmacion
     return redirect('inventario:lista_ventas')
