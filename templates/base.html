@@ -23,9 +23,36 @@
         <!-- Toolbar -->
         <div class="toolbar">
             {% block toolbar %}
-            <a href="{% url 'inventario:lista_productos' %}" class="toolbar-btn {% if request.resolver_match.url_name == 'lista_productos' %}active{% endif %}">📋 Inventario</a>
-            <a href="{% url 'inventario:importar_productos' %}" class="toolbar-btn">📥 Importar</a>
-            <a href="{% url 'admin:index' %}" class="toolbar-btn">⚙️ Admin</a>
+            
+            {% if user.is_authenticated %}
+                <!-- Opciones según el rol -->
+                {% if user.perfilusuario.rol.nombre == 'Administrador' or user.perfilusuario.rol.nombre == 'Vendedor' %}
+                    <a href="{% url 'inventario:lista_productos' %}" class="toolbar-btn {% if 'inventario' in request.path %}active{% endif %}">📋 Inventario</a>
+                    <a href="{% url 'inventario:importar_productos' %}" class="toolbar-btn">📥 Importar</a>
+                    {% if user.perfilusuario.rol.nombre == 'Administrador' %}
+                        <a href="{% url 'admin:index' %}" class="toolbar-btn">⚙️ Admin</a>
+                    {% endif %}
+                {% else %}
+                    <!-- Cliente -->
+                    <a href="{% url 'carrito:catalogo' %}" class="toolbar-btn {% if request.resolver_match.url_name == 'catalogo' %}active{% endif %}">🏠 Catálogo</a>
+                    <a href="{% url 'carrito:ver_carrito' %}" class="toolbar-btn {% if 'carrito' in request.path and request.resolver_match.url_name != 'catalogo' %}active{% endif %}">
+                        🛒 Mi Carrito
+                        {% if user.carrito.cantidad_items > 0 %}
+                            <span style="background: #dc3545; color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px; margin-left: 5px;">
+                                {{ user.carrito.cantidad_items }}
+                            </span>
+                        {% endif %}
+                    </a>
+                {% endif %}
+                
+                <a href="{% url 'registration:perfil' %}" class="toolbar-btn">👤 Perfil</a>
+                <a href="{% url 'registration:logout' %}" class="toolbar-btn">🚪 Salir</a>
+            {% else %}
+                <a href="{% url 'carrito:catalogo' %}" class="toolbar-btn">🏠 Catálogo</a>
+                <a href="{% url 'registration:login' %}" class="toolbar-btn">🔐 Iniciar Sesión</a>
+                <a href="{% url 'registration:registro' %}" class="toolbar-btn">📝 Registrarse</a>
+            {% endif %}
+            
             {% endblock %}
         </div>
 

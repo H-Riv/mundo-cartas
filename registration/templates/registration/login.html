@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Mundo Cartas</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="system-title">🃏 MUNDO CARTAS - Iniciar Sesión</div>
+        <div class="user-info">
+            Fecha: {{ fecha_actual|date:"d/m/Y" }} | Hora: <span id="hora">{{ hora_actual }}</span>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <a href="{% url 'carrito:catalogo' %}" class="toolbar-btn">🏠 Catálogo</a>
+        <a href="{% url 'registration:login' %}" class="toolbar-btn active">🔐 Iniciar Sesión</a>
+        <a href="{% url 'registration:registro' %}" class="toolbar-btn">📝 Registrarse</a>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- Mensajes -->
+        {% if messages %}
+        <div style="max-width: 500px; margin: 0 auto 20px auto;">
+            {% for message in messages %}
+            <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div style="max-width: 500px; margin: 50px auto; padding: 20px;">
+            <div style="background: white; border: 2px solid #4472c4; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h2 style="text-align: center; color: #4472c4; margin-bottom: 30px; font-size: 24px;">🃏 MUNDO CARTAS</h2>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label class="form-label required">Usuario:</label>
+                        <input type="text" name="username" class="form-input" placeholder="Ingresa tu usuario" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">Contraseña:</label>
+                        <input type="password" name="password" class="form-input" placeholder="Ingresa tu contraseña" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px; padding: 12px;">
+                        🔐 INICIAR SESIÓN
+                    </button>
+                </form>
+                
+                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                    <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+                        ¿No tienes una cuenta?
+                    </p>
+                    <a href="{% url 'registration:registro' %}" class="btn btn-secondary" style="text-decoration: none; display: inline-block;">
+                        📝 CREAR CUENTA
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Actualizar hora
+        function actualizarHora() {
+            const ahora = new Date();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            const segundos = String(ahora.getSeconds()).padStart(2, '0');
+            document.getElementById('hora').textContent = `${horas}:${minutos}:${segundos}`;
+        }
+        setInterval(actualizarHora, 1000);
+        actualizarHora();
+    </script>
+</body>
+</html>

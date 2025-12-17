@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Pedido - Mundo Cartas{% endblock %}
+
+{% block page_header %}Confirmar Pedido{% endblock %}
+
+{% block toolbar %}
+<a href="{% url 'carrito:ver_carrito' %}" class="toolbar-btn">← Volver al Carrito</a>
+<a href="{% url 'carrito:confirmar_pedido' %}" class="toolbar-btn active">✓ Confirmar Pedido</a>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <div class="section-title">CONFIRMACIÓN DE PEDIDO</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 400px; gap: 30px;">
+        <!-- Columna izquierda: Resumen de productos -->
+        <div>
+            <div style="background: white; border: 1px solid #d0d0d0; padding: 20px; margin-bottom: 20px;">
+                <h3 style="font-size: 16px; font-weight: 700; color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #4472c4;">
+                    📦 PRODUCTOS A COMPRAR
+                </h3>
+                
+                {% for item in items %}
+                <div style="display: grid; grid-template-columns: 60px 1fr auto; gap: 15px; padding: 15px 0; border-bottom: 1px solid #e0e0e0;">
+                    <img src="{{ item.producto.get_imagen_url }}" 
+                         alt="{{ item.producto.nombre }}"
+                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                    
+                    <div>
+                        <div style="font-weight: 600; color: #333; margin-bottom: 5px;">
+                            {{ item.producto.nombre }}
+                        </div>
+                        <div style="font-size: 12px; color: #666;">
+                            {{ item.producto.codigo_sku }} | {{ item.producto.categoria.nombre }}
+                        </div>
+                        <div style="font-size: 13px; color: #666; margin-top: 5px;">
+                            Cantidad: <strong>{{ item.cantidad }}</strong> × ${{ item.producto.precio|floatformat:0 }}
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: 700; color: #28a745;">
+                            ${{ item.subtotal|floatformat:0 }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Información de entrega (simulada por ahora) -->
+            <div style="background: #f8f8f8; border: 1px solid #d0d0d0; padding: 20px;">
+                <h3 style="font-size: 14px; font-weight: 700; color: #333; margin-bottom: 15px;">
+                    📍 INFORMACIÓN DE ENTREGA
+                </h3>
+                <p style="font-size: 13px; color: #666; margin: 0;">
+                    <strong>Nota:</strong> Por ahora esta es una simulación. En la versión final podrás ingresar tu dirección de envío y seleccionar método de pago con Transbank.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Columna derecha: Resumen y pago -->
+        <div>
+            <div style="background: white; border: 2px solid #4472c4; padding: 25px; position: sticky; top: 20px;">
+                <h3 style="font-size: 16px; font-weight: 700; color: #4472c4; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #4472c4;">
+                    RESUMEN DEL PEDIDO
+                </h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
+                        <span>Subtotal ({{ items.count }} productos):</span>
+                        <span style="font-weight: 600;">${{ total|floatformat:0 }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #666;">
+                        <span>IVA (19%):</span>
+                        <span>${{ total|floatformat:0|add:"0.19"|floatformat:0 }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #666;">
+                        <span>Envío:</span>
+                        <span>Por calcular</span>
+                    </div>
+                </div>
+                
+                <div style="border-top: 2px solid #4472c4; padding-top: 15px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 18px; font-weight: 700;">TOTAL:</span>
+                        <span style="font-size: 32px; font-weight: 700; color: #4472c4;">
+                            ${{ total|floatformat:0 }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Botón de pago (simulado) -->
+                <button type="button" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 16px; margin-bottom: 15px;" onclick="simularPago()">
+                    💳 PAGAR CON TRANSBANK
+                </button>
+                
+                <a href="{% url 'carrito:ver_carrito' %}" class="btn btn-secondary" style="width: 100%; text-align: center; text-decoration: none; display: block;">
+                    ← MODIFICAR CARRITO
+                </a>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #e8f0ff; border-radius: 4px; font-size: 11px; color: #2e5c8a;">
+                    <strong>🔒 Compra segura</strong><br>
+                    Tus datos están protegidos con encriptación SSL
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function simularPago() {
+    if (confirm('Esta es una simulación del proceso de pago.\n\n¿Deseas proceder con la compra simulada?')) {
+        alert('✓ Pago procesado correctamente (simulación)\n\nEn la versión final, aquí se integrará Transbank para pagos reales.');
+        window.location.href = "{% url 'inventario:lista_productos' %}";
+    }
+}
+</script>
+{% endblock %}

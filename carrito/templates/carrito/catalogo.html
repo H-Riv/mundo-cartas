@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogo - Mundo Cartas{% endblock %}
+
+{% block page_header %}Catálogo de Productos{% endblock %}
+
+{% block toolbar %}
+<a href="{% url 'carrito:catalogo' %}" class="toolbar-btn active">🏠 Catálogo</a>
+
+{% if user.is_authenticated %}
+    <a href="{% url 'carrito:ver_carrito' %}" class="toolbar-btn">
+        🛒 Mi Carrito
+        {% if cantidad_carrito > 0 %}
+            <span style="background: #dc3545; color: white; border-radius: 10px; padding: 2px 8px; font-size: 11px; margin-left: 5px;">
+                {{ cantidad_carrito }}
+            </span>
+        {% endif %}
+    </a>
+    <a href="{% url 'registration:perfil' %}" class="toolbar-btn">👤 {{ user.username }}</a>
+    <a href="{% url 'registration:logout' %}" class="toolbar-btn">🚪 Salir</a>
+{% else %}
+    <a href="{% url 'registration:login' %}" class="toolbar-btn">🔐 Iniciar Sesión</a>
+    <a href="{% url 'registration:registro' %}" class="toolbar-btn">📝 Registrarse</a>
+{% endif %}
+
+{% endblock %}
+
+{% block content %}
+<!-- Main Layout -->
+<div class="main-layout">
+    <!-- Left Panel - Filtros -->
+    <div class="form-panel">
+        <div class="section-title">FILTROS DE BÚSQUEDA</div>
+        
+        <form method="GET" id="filtro-form">
+            <div class="form-group">
+                <label class="form-label">Buscar producto:</label>
+                <input type="text" name="busqueda" class="form-input" 
+                       placeholder="Nombre o código..." 
+                       value="{{ request.GET.busqueda }}">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Categoría:</label>
+                <select name="categoria" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" 
+                            {% if request.GET.categoria == categoria.id|stringformat:"s" %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Subcategoría (Franquicia):</label>
+                <select name="subcategoria" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todas las franquicias</option>
+                    {% for subcategoria in subcategorias %}
+                    <option value="{{ subcategoria.id }}"
+                            {% if request.GET.subcategoria == subcategoria.id|stringformat:"s" %}selected{% endif %}>
+                        {{ subcategoria.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">🔍 Buscar</button>
+                <a href="{% url 'carrito:catalogo' %}" class="btn btn-secondary" style="text-decoration: none; text-align: center;">🔄 Limpiar</a>
+            </div>
+        </form>
+        
+        <!-- Info del catálogo -->
+        <div class="info-box" style="margin-top: 20px;">
+            <strong>📊 Productos disponibles:</strong> {{ total_productos }}<br>
+            <strong>🛒 Items en tu carrito:</strong> {{ cantidad_carrito }}
+        </div>
+    </div>
+    
+    <!-- Right Panel - Catálogo de productos -->
+    <div class="inventory-panel">
+        <div class="section-title">PRODUCTOS DISPONIBLES</div>
+        
+        <!-- Grid de productos estilo tarjetas -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+            {% for producto in productos %}
+            <div style="background: white; border: 1px solid #d0d0d0; border-radius: 4px; overflow: hidden; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" 
+                 onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+                
+                <!-- Imagen del producto -->
+                <div style="position: relative;">
+                    <img src="{{ producto.get_imagen_url }}" 
+                         alt="{{ producto.nombre }}"
+                         style="width: 100%; height: 250px; object-fit: cover;">
+                    
+                    <!-- Badge de stock -->
+                    <div style="position: absolute; top: 10px; right: 10px; background: {{ producto.get_clase_css_stock|slice:'6:' }}; color: white; padding: 5px 12px; border-radius: 15px; font-size: 11px; font-weight: 600;">
+                        {% if producto.get_estado_stock == 'CRITICO' %}
+                            ⚠️ Últimas {{ producto.stock }} unidades
+                        {% elif producto.get_estado_stock == 'BAJO' %}
+                            ⚡ Pocas unidades
+                        {% else %}
+                            ✓ Stock: {{ producto.stock }}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Información del producto -->
+                <div style="padding: 15px;">
+                    <div style="font-size: 11px; color: #666; margin-bottom: 5px;">
+                        {{ producto.codigo_sku }} | {{ producto.categoria.nombre }}
+                    </div>
+                    
+                    <h3 style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px; min-height: 40px; line-height: 1.4;">
+                        {{ producto.nombre }}
+                    </h3>
+                    
+                    {% if producto.subcategoria %}
+                    <div style="font-size: 12px; color: #4472c4; margin-bottom: 10px;">
+                        🎮 {{ producto.subcategoria.nombre }}
+                    </div>
+                    {% endif %}
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #28a745;">
+                            ${{ producto.precio|floatformat:0 }}
+                        </div>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'carrito:agregar_al_carrito' producto.id %}" 
+                        class="btn btn-primary" 
+                        style="width: 100%; text-decoration: none; text-align: center; display: block;">
+                            🛒 AGREGAR AL CARRITO
+                        </a>
+                    {% else %}
+                        <a href="{% url 'registration:registro' %}" 
+                        class="btn btn-secondary" 
+                        style="width: 100%; text-decoration: none; text-align: center; display: block;">
+                            📝 REGÍSTRATE PARA COMPRAR
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div style="grid-column: 1/-1;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <div><strong>No se encontraron productos</strong></div>
+                    <div style="font-size: 13px; margin-top: 10px; margin-bottom: 20px;">
+                        No hay productos disponibles con los filtros seleccionados
+                    </div>
+                    <a href="{% url 'carrito:catalogo' %}" class="btn btn-primary" style="text-decoration: none;">
+                        🔄 VER TODOS LOS PRODUCTOS
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script>
+        // Actualizar hora
+        function actualizarHora() {
+            const ahora = new Date();
+            const horas = String(ahora.getHours()).padStart(2, '0');
+            const minutos = String(ahora.getMinutes()).padStart(2, '0');
+            const segundos = String(ahora.getSeconds()).padStart(2, '0');
+            document.getElementById('hora').textContent = `${horas}:${minutos}:${segundos}`;
+        }
+        setInterval(actualizarHora, 1000);
+        actualizarHora();
+    </script>
+</div>
+
+<style>
+/* Ajuste para los badges de stock */
+.stock-ok { background: #28a745; }
+.stock-low { background: #ffc107; }
+.stock-critical { background: #dc3545; }
+</style>
+{% endblock %}

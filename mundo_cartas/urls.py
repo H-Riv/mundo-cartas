@@ -23,7 +23,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('inventario/', include('inventario.urls')),
-    path('', lambda request: redirect('inventario:lista_productos')),
+    path('carrito/', include('carrito.urls')),
+    path('accounts/', include('registration.urls')),
+    path('', lambda request: redirect('carrito:catalogo')),
 ]
 
 if settings.DEBUG:
