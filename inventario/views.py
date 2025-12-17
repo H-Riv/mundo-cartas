@@ -4,14 +4,17 @@ from .models import Producto, Categoria, Subcategoria, MovimientoStock, Venta, D
 from django.http import JsonResponse
 from django.db.models import Q
 from decimal import Decimal
-#Imports para leer Excels
+from registration.decorators import rol_requerido, solo_administrador, solo_vendedor_o_admin
+#imports para excel
 import pandas as pd
 from django.http import HttpResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
+
+@solo_vendedor_o_admin
 def lista_productos(request):
-    """Vista principal del inventario"""
+    """Vista principal del inventario - Solo vendedores y admin"""
     productos = Producto.objects.filter(activo=True).select_related('categoria', 'subcategoria')
     categorias = Categoria.objects.filter(activo=True)
     subcategorias = Subcategoria.objects.filter(activo=True)
@@ -50,8 +53,10 @@ def lista_productos(request):
  
     return render(request, 'inventario/lista_productos.html', context)
 
+
+@solo_vendedor_o_admin
 def crear_producto(request):
-    """Crear nuevo producto"""
+    """Crear nuevo producto - Solo vendedores y admin"""
     
     if request.method == 'POST':
         try:
@@ -143,9 +148,11 @@ def crear_producto(request):
             return redirect('inventario:lista_productos')
     
     return redirect('inventario:lista_productos')
-    
+
+
+@solo_administrador
 def editar_producto(request, pk):
-    """Editar producto existente"""
+    """Editar producto existente - SOLO ADMINISTRADOR"""
     producto = get_object_or_404(Producto, pk=pk)
     
     if request.method == 'POST':
@@ -238,8 +245,10 @@ def editar_producto(request, pk):
     
     return redirect('inventario:lista_productos')
 
+
+@solo_administrador
 def eliminar_producto(request, pk):
-    """Baja logica de producto"""
+    """Baja logica de producto - SOLO ADMINISTRADOR"""
     producto = get_object_or_404(Producto, pk=pk)
     
     if request.method == 'POST':
@@ -250,9 +259,14 @@ def eliminar_producto(request, pk):
     return redirect('inventario:lista_productos')
 
 
+@solo_vendedor_o_admin
 def ajustar_stock(request, pk):
-    """Vista para ajustar stock de un producto con historial"""
+    """Vista para ajustar stock de un producto con historial - Vendedores y Admin"""
     producto = get_object_or_404(Producto, pk=pk)
+    
+    # Obtener perfil del usuario
+    perfil = request.user.perfilusuario
+    es_vendedor = perfil.rol.nombre == 'Vendedor'
     
     #Obtener historial de movimientos del producto
     movimientos = MovimientoStock.objects.filter(producto=producto).order_by('-fecha_movimiento')[:20]
@@ -263,6 +277,11 @@ def ajustar_stock(request, pk):
             cantidad = int(request.POST.get('cantidad'))
             motivo = request.POST.get('motivo')
             observaciones = request.POST.get('observaciones')
+            
+            # RESTRICCIÓN: Vendedor NO puede usar AJUSTE
+            if es_vendedor and tipo_movimiento == 'AJUSTE':
+                messages.error(request, '⛔ Los vendedores no pueden usar la función AJUSTE. Solo ENTRADA o SALIDA.')
+                return redirect('inventario:ajustar_stock', pk=pk)
             
             #Validar Tipo de movimiento
             if not tipo_movimiento:
@@ -315,45 +334,42 @@ def ajustar_stock(request, pk):
         
     context = {
         'producto' : producto,
-        'movimientos' : movimientos
+        'movimientos' : movimientos,
+        'es_vendedor': es_vendedor,
     }
     
     return render(request, 'inventario/ajustar_stock.html', context)
 
+@solo_vendedor_o_admin
 def importar_productos(request):
-    """Vista para importar productos desde Excel/CSV"""
+    """Vista para importar productos desde Excel/CSV - Vendedores y Admin"""
     if request.method == 'GET':
         # Solo limpiar errores si viene con el parámetro 'limpiar' o si no hay errores previos
-        # Esto permite que el redirect POST->GET mantenga los errores
         if request.GET.get('limpiar') == '1' or not request.session.get('errores_importacion'):
             if 'errores_importacion' in request.session:
                 del request.session['errores_importacion']
                 request.session.modified = True
         
-        # Mostrar la página de importación
         return render(request, 'inventario/importar_productos.html')
     
     elif request.method == 'POST':
-        #Procesar archivo subido
+        # ... (mantén todo el código existente de importación)
         if 'archivo' not in request.FILES:
             messages.error(request, 'No se ha seleccionado ningun archivo')
             return redirect('inventario:importar_productos')
         
         archivo = request.FILES['archivo']
         
-        #Validar extension
         if not archivo.name.endswith(('.xlsx', '.xls', '.csv')):
             messages.error(request, 'Formato de archivo no valido. Use .xlsx, .xls o .csv')
             return redirect('inventario:importar_productos')
         
         try:
-            #Leer archivo
             if archivo.name.endswith('.csv'):
                 df = pd.read_csv(archivo)
             else:
                 df = pd.read_excel(archivo)
                 
-            #Validar columnas requeridas
             columnas_requeridas = ['codigo_sku', 'nombre', 'categoria', 'precio']
             columnas_faltantes = [col for col in columnas_requeridas if col not in df.columns]
             
@@ -361,16 +377,14 @@ def importar_productos(request):
                 messages.error(request, f'Faltan columnas requeridas: {", ".join(columnas_faltantes)}')
                 return redirect('inventario:importar_productos')
             
-            #Procesar cada fila
             productos_validos = []
             productos_actualizados = 0
             errores = []
             
             for index, row in df.iterrows():
-                fila_num = index + 2 #Se usa +2 porque Excel empieza en 1 y tiene header
+                fila_num = index + 2
                 
                 try:
-                    #Validar campos requeridos
                     if pd.isna(row['codigo_sku']):
                         errores.append(f'Fila {fila_num}: Falta el código SKU del producto')
                         continue
@@ -383,7 +397,6 @@ def importar_productos(request):
                         errores.append(f'Fila {fila_num}: Falta el precio del producto')
                         continue
                     
-                    # Validar que precio sea un número válido
                     try:
                         precio = float(row['precio'])
                         if precio <= 0:
@@ -393,7 +406,6 @@ def importar_productos(request):
                         errores.append(f'Fila {fila_num}: El precio tiene un formato inválido')
                         continue
                     
-                    # Validar categoría
                     if pd.isna(row['categoria']):
                         errores.append(f'Fila {fila_num}: Falta la categoría del producto')
                         continue
@@ -404,21 +416,17 @@ def importar_productos(request):
                         errores.append(f"Fila {fila_num}: La categoría '{row['categoria']}' no existe en el sistema. Créela primero en el admin.")
                         continue
                     
-                    #Buscar la subcategoria (opcional)
                     subcategoria = None
                     if not pd.isna(row.get('subcategoria')):
                         try:
                             subcategoria = Subcategoria.objects.get(nombre=row['subcategoria'])
-                        
                         except Subcategoria.DoesNotExist:
                             errores.append(f"Fila {fila_num}: La subcategoría '{row['subcategoria']}' no existe en el sistema. Créela primero en el admin.")
                             continue
                     
-                    # Verificar si el producto ya existe
                     producto_existente = Producto.objects.filter(codigo_sku=row['codigo_sku']).first()
 
                     if producto_existente:
-                        # Si existe, validar que sea el MISMO producto (mismo nombre y categoría)
                         if producto_existente.nombre.lower() != str(row['nombre']).lower():
                             errores.append(f"Fila {fila_num}: El código SKU '{row['codigo_sku']}' ya existe con un producto diferente ('{producto_existente.nombre}'). No se puede usar el mismo SKU para productos distintos.")
                             continue
@@ -427,13 +435,11 @@ def importar_productos(request):
                             errores.append(f"Fila {fila_num}: El código SKU '{row['codigo_sku']}' existe pero con categoría diferente. SKU registrado: '{producto_existente.categoria.nombre}', Excel: '{categoria.nombre}'")
                             continue
                         
-                        # Si subcategoría existe en ambos, validar que coincidan
                         if producto_existente.subcategoria and subcategoria:
                             if producto_existente.subcategoria != subcategoria:
                                 errores.append(f"Fila {fila_num}: El código SKU '{row['codigo_sku']}' existe pero con subcategoría diferente. SKU registrado: '{producto_existente.subcategoria.nombre}', Excel: '{subcategoria.nombre}'")
                                 continue
                         
-                        # Si todo coincide, SUMAR el stock en lugar de crear uno nuevo
                         stock_a_sumar = int(row.get('stock', 0)) if not pd.isna(row.get('stock')) else 0
                         
                         if stock_a_sumar > 0:
@@ -441,7 +447,6 @@ def importar_productos(request):
                             producto_existente.stock += stock_a_sumar
                             producto_existente.save()
                             
-                            # Registrar el movimiento en el historial
                             MovimientoStock.objects.create(
                                 producto=producto_existente,
                                 tipo='ENTRADA',
@@ -455,10 +460,8 @@ def importar_productos(request):
                             
                             productos_actualizados += 1
                         
-                        # No agregamos a productos_validos porque ya se guardó directamente
                         continue
                     
-                    #Crear producto (en memoria, temporalmente)
                     producto = Producto(
                         codigo_sku=str(row['codigo_sku']),
                         nombre=str(row['nombre']),
@@ -474,16 +477,13 @@ def importar_productos(request):
                     productos_validos.append(producto)
                     
                 except Exception as e:
-                    # Error genérico más amigable
                     errores.append(f"Fila {fila_num}: Error de formato en los datos. Revise que todas las columnas tengan el formato correcto.")
             
-            #Guardar productos válidos (nuevos)
             productos_nuevos = 0
             if productos_validos:
                 Producto.objects.bulk_create(productos_validos)
                 productos_nuevos = len(productos_validos)
 
-            # Mensaje de éxito con detalles
             if productos_nuevos > 0 and productos_actualizados > 0:
                 messages.success(request, f'✓ Se importaron {productos_nuevos} productos nuevos y se actualizó el stock de {productos_actualizados} productos existentes')
             elif productos_nuevos > 0:
@@ -491,12 +491,10 @@ def importar_productos(request):
             elif productos_actualizados > 0:
                 messages.success(request, f'✓ Se actualizó el stock de {productos_actualizados} productos existentes')
             
-            # Guardar errores en sesion para mostrarlos
             if errores:
                 request.session['errores_importacion'] = errores[:20]
                 request.session.modified = True
             else:
-                # Si no hay errores, limpiar cualquier error previo
                 if 'errores_importacion' in request.session:
                     del request.session['errores_importacion']
                     request.session.modified = True
@@ -506,28 +504,25 @@ def importar_productos(request):
         except Exception as e:
             messages.error(request, f'Error al procesar el archivo: {str(e)}')
             return redirect('inventario:importar_productos')
-        
+
+
+@solo_vendedor_o_admin
 def descargar_plantilla(request):
-    """Generar y descargar plantilla Excel para importacion"""
-    #Crear un nuevo libro Excel
+    """Generar y descargar plantilla Excel para importacion - Vendedores y Admin"""
     wb = Workbook()
     ws = wb.active
     ws.title = "Plantilla Productos"
     
-    #Definir encabezados
     headers = ['codigo_sku', 'nombre', 'categoria', 'subcategoria', 'descripcion', 'precio', 'stock', 'stock_minimo', 'stock_critico']
     
-    #Estilo para encabezados
     header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
     
-    #Escribir encabezados
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_num, value=header)
         cell.fill = header_fill
         cell.font = header_font
         
-    #Agregar ejemplos
     ejemplos = [
         ['MC-0001', 'Starter Deck Digimon TCG', 'Decks', 'Digimon', 'Deck de inicio', 15990, 10, 5, 2],
         ['MC-0002', 'Sobre Pokemon Escarlata', 'Sobres', 'Pokemon', 'Sobre de expansión', 4500, 50, 10, 3],
@@ -538,7 +533,6 @@ def descargar_plantilla(request):
         for col_num, value in enumerate(ejemplo, 1):
             ws.cell(row=row_num, column=col_num, value=value)
             
-    #Ajustar ancho de las columnas
     ws.column_dimensions['A'].width = 15
     ws.column_dimensions['B'].width = 35
     ws.column_dimensions['C'].width = 15
@@ -549,7 +543,6 @@ def descargar_plantilla(request):
     ws.column_dimensions['H'].width = 15
     ws.column_dimensions['I'].width = 15
     
-    #Preparar respuesta HTTP
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
@@ -563,8 +556,9 @@ def descargar_plantilla(request):
 # VISTAS POS / VENTAS
 # ====================================
 
+@solo_vendedor_o_admin
 def pos(request):
-    """Vista principal del POS (Punto de Venta)"""
+    """Vista principal del POS (Punto de Venta) - Solo vendedores y admin"""
     productos = Producto.objects.filter(activo=True, stock__gt=0).select_related('categoria', 'subcategoria')
     categorias = Categoria.objects.filter(activo=True)
     
@@ -587,21 +581,20 @@ def pos(request):
     return render(request, 'inventario/pos.html', context)
 
 
+@solo_vendedor_o_admin
 def buscar_producto_ajax(request):
-    """Búsqueda de productos vía AJAX para el POS"""
+    """Búsqueda de productos vía AJAX para el POS - Solo vendedores y admin"""
     query = request.GET.get('q', '').strip()
     
     if len(query) < 2:
         return JsonResponse({'productos': []})
     
-    # Buscar por código SKU o nombre
     productos = Producto.objects.filter(
         Q(codigo_sku__icontains=query) | Q(nombre__icontains=query),
         activo=True,
         stock__gt=0
     ).select_related('categoria', 'subcategoria')[:10]
     
-    # Convertir a JSON
     productos_data = []
     for p in productos:
         productos_data.append({
@@ -618,8 +611,9 @@ def buscar_producto_ajax(request):
     return JsonResponse({'productos': productos_data})
 
 
+@solo_vendedor_o_admin
 def procesar_venta(request):
-    """Procesar una venta desde el POS"""
+    """Procesar una venta desde el POS - Solo vendedores y admin"""
     if request.method == 'POST':
         try:
             import json
@@ -634,7 +628,6 @@ def procesar_venta(request):
                     'error': 'El carrito está vacío'
                 }, status=400)
             
-            # Validar stock antes de procesar
             for item in carrito:
                 producto = Producto.objects.get(id=item['producto_id'])
                 if producto.stock < item['cantidad']:
@@ -643,17 +636,14 @@ def procesar_venta(request):
                         'error': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}'
                     }, status=400)
             
-            # Crear la venta
             venta = Venta.objects.create(
                 cliente_nombre=cliente_nombre if cliente_nombre else None,
                 usuario=request.user if request.user.is_authenticated else None
             )
             
-            # Crear detalles y reducir stock
             for item in carrito:
                 producto = Producto.objects.get(id=item['producto_id'])
                 
-                # Crear detalle de venta
                 DetalleVenta.objects.create(
                     venta=venta,
                     producto=producto,
@@ -661,12 +651,10 @@ def procesar_venta(request):
                     precio_unitario=producto.precio
                 )
                 
-                # Reducir stock
                 stock_anterior = producto.stock
                 producto.stock -= item['cantidad']
                 producto.save()
                 
-                # Registrar movimiento de stock
                 MovimientoStock.objects.create(
                     producto=producto,
                     tipo='VENTA',
@@ -677,7 +665,6 @@ def procesar_venta(request):
                     usuario=request.user if request.user.is_authenticated else None
                 )
             
-            # Calcular totales
             venta.calcular_totales()
             
             return JsonResponse({
@@ -699,11 +686,11 @@ def procesar_venta(request):
     }, status=405)
 
 
+@solo_vendedor_o_admin
 def lista_ventas(request):
-    """Lista de ventas realizadas"""
+    """Lista de ventas realizadas - Solo vendedores y admin"""
     ventas = Venta.objects.all().select_related('usuario').prefetch_related('detalles__producto')
     
-    # Filtros
     estado_filtro = request.GET.get('estado')
     fecha_desde = request.GET.get('fecha_desde')
     fecha_hasta = request.GET.get('fecha_hasta')
@@ -724,7 +711,6 @@ def lista_ventas(request):
             Q(cliente_nombre__icontains=busqueda)
         )
     
-    # Estadísticas
     total_ventas = ventas.filter(estado='COMPLETADA').count()
     total_monto = sum(v.total for v in ventas.filter(estado='COMPLETADA'))
     ventas_anuladas = ventas.filter(estado='ANULADA').count()
@@ -739,8 +725,9 @@ def lista_ventas(request):
     return render(request, 'inventario/lista_ventas.html', context)
 
 
+@solo_vendedor_o_admin
 def comprobante_venta(request, pk):
-    """Generar comprobante de venta (por ahora HTML, luego PDF)"""
+    """Generar comprobante de venta - Solo vendedores y admin"""
     venta = get_object_or_404(Venta, pk=pk)
     detalles = venta.detalles.all().select_related('producto')
     
@@ -752,8 +739,9 @@ def comprobante_venta(request, pk):
     return render(request, 'inventario/comprobante_venta.html', context)
 
 
+@solo_vendedor_o_admin
 def anular_venta(request, pk):
-    """Anular una venta y reponer el stock"""
+    """Anular una venta y reponer el stock - Solo vendedores y admin"""
     venta = get_object_or_404(Venta, pk=pk)
     
     if request.method == 'POST':
@@ -762,14 +750,12 @@ def anular_venta(request, pk):
             return redirect('inventario:lista_ventas')
         
         try:
-            # Reponer stock de cada producto
             for detalle in venta.detalles.all():
                 producto = detalle.producto
                 stock_anterior = producto.stock
                 producto.stock += detalle.cantidad
                 producto.save()
                 
-                # Registrar movimiento de anulación
                 MovimientoStock.objects.create(
                     producto=producto,
                     tipo='ANULACION',
@@ -781,7 +767,6 @@ def anular_venta(request, pk):
                     usuario=request.user if request.user.is_authenticated else None
                 )
             
-            # Marcar venta como anulada
             venta.estado = 'ANULADA'
             venta.save()
             

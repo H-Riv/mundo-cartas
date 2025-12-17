@@ -9,7 +9,13 @@
 <div class="main-layout">
     <!-- Left Panel - Form -->
     <div class="form-panel">
-        <div class="section-title" id="form-title">REGISTRO DE PRODUCTO NUEVO</div>
+        <div class="section-title" id="form-title">
+            {% if user.perfilusuario.rol.nombre == 'Administrador' %}
+                REGISTRO DE PRODUCTO NUEVO
+            {% else %}
+                REGISTRO DE PRODUCTO NUEVO (Solo lectura para edición)
+            {% endif %}
+        </div>
         
         <form method="POST" id="producto-form" action="{% url 'inventario:crear_producto' %}" enctype="multipart/form-data">
             {% csrf_token %}
@@ -216,16 +222,20 @@
                                 <a href="{% url 'inventario:ajustar_stock' producto.id %}" class="btn-icon" style="color: #17a2b8; text-decoration: none;">
                                     📦 Stock
                                 </a>
-                                <button class="btn-icon btn-edit" 
-                                        onclick="editarProducto({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.categoria.id }}, {{ producto.subcategoria.id|default:'null' }}, {{ producto.precio }}, {{ producto.stock }}, {{ producto.stock_minimo }}, {{ producto.stock_critico }}, '{{ producto.descripcion|default:''|escapejs }}', '{{ producto.get_imagen_url|escapejs }}')">
-                                    ✏️ Editar
-                                </button>
-                                <form method="POST" action="{% url 'inventario:eliminar_producto' producto.id %}" 
-                                      style="display: inline;"
-                                      onsubmit="return confirm('¿Está seguro de dar de baja este producto?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-icon btn-delete">🗑️ Baja</button>
-                                </form>
+                                
+                                {% if user.perfilusuario.rol.nombre == 'Administrador' %}
+                                    <button class="btn-icon btn-edit" 
+                                            onclick="editarProducto({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.categoria.id }}, {{ producto.subcategoria.id|default:'null' }}, {{ producto.precio }}, {{ producto.stock }}, {{ producto.stock_minimo }}, {{ producto.stock_critico }}, '{{ producto.descripcion|default:''|escapejs }}', '{{ producto.get_imagen_url|escapejs }}')">
+                                        ✏️ Editar
+                                    </button>
+                                    
+                                    <form method="POST" action="{% url 'inventario:eliminar_producto' producto.id %}" 
+                                        style="display: inline;"
+                                        onsubmit="return confirm('¿Está seguro de dar de baja este producto?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-icon btn-delete">🗑️ Baja</button>
+                                    </form>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
