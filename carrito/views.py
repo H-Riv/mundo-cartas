@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.db.models import Q
 from .models import Carrito, ItemCarrito
 from inventario.models import Producto, Categoria, Subcategoria
-
+from decimal import Decimal
 
 def catalogo_productos(request):
     """Catálogo público de productos para clientes (con filtros)"""
@@ -52,16 +52,23 @@ def catalogo_productos(request):
     return render(request, 'carrito/catalogo.html', context)
 
 
+@login_required
 def ver_carrito(request):
     """Vista principal del carrito"""
     carrito, created = Carrito.objects.get_or_create(usuario=request.user)
     items = carrito.itemcarrito_set.select_related('producto').all()
+
     total = carrito.total()
+    
+    neto = int(total / Decimal('1.19'))
+    iva = total - neto
     
     context = {
         'carrito': carrito,
         'items': items,
         'total': total,
+        'neto': neto,
+        'iva': iva,
     }
     return render(request, 'carrito/ver_carrito.html', context)
 
