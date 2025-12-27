@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Editar Vendedor - Mundo Cartas{% endblock %}
+
+{% block page_header %}Editar Perfil de Vendedor{% endblock %}
+
+{% block toolbar %}
+<a href="{% url 'registration:lista_vendedores' %}" class="toolbar-btn">← Volver a Vendedores</a>
+<a href="{% url 'registration:editar_vendedor' vendedor_user.id %}" class="toolbar-btn active">✏️ Editar Vendedor</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .editar-container {
+        padding: 20px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .layout-dos-columnas {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .editar-panel {
+        background: white;
+        border: 2px solid #4472c4;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stats-panel {
+        background: white;
+        border: 2px solid #d0d0d0;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .panel-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .panel-header h2 {
+        color: #4472c4;
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    
+    .panel-header p {
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .form-section {
+        margin-bottom: 25px;
+    }
+    
+    .section-title-edit {
+        font-size: 16px;
+        font-weight: 700;
+        color: #4472c4;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #4472c4;
+    }
+    
+    .form-group-edit {
+        margin-bottom: 20px;
+    }
+    
+    .form-label-edit {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+    }
+    
+    .form-label-edit.required::after {
+        content: " *";
+        color: #dc3545;
+    }
+    
+    .form-input-edit {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #d0d0d0;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-input-edit:focus {
+        outline: none;
+        border-color: #4472c4;
+    }
+    
+    .form-textarea-edit {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #d0d0d0;
+        border-radius: 4px;
+        font-size: 14px;
+        min-height: 100px;
+        resize: vertical;
+        font-family: inherit;
+        transition: border-color 0.3s;
+    }
+    
+    .form-textarea-edit:focus {
+        outline: none;
+        border-color: #4472c4;
+    }
+    
+    .readonly-field {
+        background: #f8f8f8;
+        cursor: not-allowed;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #e0e0e0;
+    }
+    
+    .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary {
+        background: #4472c4;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #3a5ba0;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .stat-box {
+        text-align: center;
+        padding: 20px;
+        background: #f8f8f8;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .stat-value-large {
+        font-size: 36px;
+        font-weight: 700;
+        color: #4472c4;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label-large {
+        font-size: 14px;
+        color: #666;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    
+    @media (max-width: 968px) {
+        .layout-dos-columnas {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="editar-container">
+    <div class="layout-dos-columnas">
+        <!-- Panel izquierdo: Formulario de edición -->
+        <div class="editar-panel">
+            <div class="panel-header">
+                <h2>✏️ Editar Vendedor</h2>
+                <p>{{ vendedor_user.username }}</p>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" style="margin-bottom: 20px;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                <!-- Información de Usuario -->
+                <div class="form-section">
+                    <div class="section-title-edit">👤 Información de Usuario</div>
+                    
+                    <div class="form-group-edit">
+                        <label class="form-label-edit required">Nombre de Usuario:</label>
+                        <input type="text" 
+                               class="form-input-edit readonly-field" 
+                               value="{{ vendedor_user.username }}"
+                               readonly>
+                        <small style="font-size: 11px; color: #666; display: block; margin-top: 5px;">
+                            El nombre de usuario no se puede modificar
+                        </small>
+                    </div>
+                    
+                    <div class="form-group-edit">
+                        <label class="form-label-edit">Nombre:</label>
+                        <input type="text" 
+                               name="first_name" 
+                               class="form-input-edit" 
+                               value="{{ vendedor_user.first_name }}"
+                               placeholder="Nombre del vendedor">
+                    </div>
+                    
+                    <div class="form-group-edit">
+                        <label class="form-label-edit">Apellido:</label>
+                        <input type="text" 
+                               name="last_name" 
+                               class="form-input-edit" 
+                               value="{{ vendedor_user.last_name }}"
+                               placeholder="Apellido del vendedor">
+                    </div>
+                    
+                    <div class="form-group-edit">
+                        <label class="form-label-edit required">Email:</label>
+                        <input type="email" 
+                               name="email" 
+                               class="form-input-edit" 
+                               value="{{ vendedor_user.email }}"
+                               placeholder="correo@ejemplo.com"
+                               required>
+                    </div>
+                </div>
+
+                <!-- Información de Contacto -->
+                <div class="form-section">
+                    <div class="section-title-edit">📞 Información de Contacto</div>
+                    
+                    <div class="form-group-edit">
+                        <label class="form-label-edit">Teléfono:</label>
+                        <input type="text" 
+                               name="telefono" 
+                               class="form-input-edit" 
+                               value="{{ vendedor_perfil.telefono }}"
+                               placeholder="+56 9 1234 5678">
+                    </div>
+                    
+                    <div class="form-group-edit">
+                        <label class="form-label-edit">Dirección:</label>
+                        <textarea name="direccion" 
+                                  class="form-textarea-edit" 
+                                  placeholder="Calle, número, comuna, ciudad">{{ vendedor_perfil.direccion }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        ✓ Guardar Cambios
+                    </button>
+                    <a href="{% url 'registration:lista_vendedores' %}" class="btn btn-secondary">
+                        ✕ Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Panel derecho: Estadísticas del vendedor -->
+        <div class="stats-panel">
+            <div class="section-title-edit">📊 Estadísticas del Vendedor</div>
+            
+            <div class="stat-box">
+                <div class="stat-value-large">{{ total_ventas }}</div>
+                <div class="stat-label-large">Ventas Realizadas</div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-value-large" style="color: #28a745;">${{ total_ingresos|floatformat:0 }}</div>
+                <div class="stat-label-large">Ingresos Generados</div>
+            </div>
+            
+            <div class="section-title-edit" style="margin-top: 30px;">📋 Información del Sistema</div>
+            
+            <div style="background: #f8f8f8; padding: 15px; border-radius: 8px; font-size: 13px; color: #666;">
+                <strong style="color: #333; display: block; margin-bottom: 10px;">Datos de Registro</strong>
+                • <strong>Rol:</strong> {{ vendedor_perfil.rol.nombre }}<br>
+                • <strong>Fecha de registro:</strong> {{ vendedor_user.date_joined|date:"d/m/Y H:i" }}<br>
+                • <strong>Perfil creado:</strong> {{ vendedor_perfil.fecha_creacion|date:"d/m/Y H:i" }}
+            </div>
+            
+            <div style="margin-top: 20px; background: #fff9e6; border: 2px solid #f0d06c; border-radius: 4px; padding: 15px; font-size: 12px; color: #856404;">
+                <strong style="display: block; margin-bottom: 5px;">⚠️ Nota Importante</strong>
+                Los vendedores no pueden editar su propio perfil por seguridad. Solo los administradores pueden modificar esta información.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

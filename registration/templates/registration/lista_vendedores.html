@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Vendedores - Mundo Cartas{% endblock %}
+
+{% block page_header %}Gestión de Vendedores{% endblock %}
+
+{% block toolbar %}
+<a href="{% url 'inventario:lista_productos' %}" class="toolbar-btn">📋 Inventario</a>
+<a href="{% url 'inventario:pos' %}" class="toolbar-btn">💳 POS</a>
+<a href="{% url 'inventario:lista_ventas' %}" class="toolbar-btn">📊 Ventas</a>
+<a href="{% url 'registration:lista_vendedores' %}" class="toolbar-btn active">👥 Vendedores</a>
+<a href="{% url 'admin:index' %}" class="toolbar-btn">⚙️ Admin</a>
+<a href="{% url 'registration:perfil' %}" class="toolbar-btn">👤 {{ user.username }}</a>
+<a href="{% url 'registration:logout' %}" class="toolbar-btn">🚪 Salir</a>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <div class="section-title">GESTIÓN DE VENDEDORES</div>
+    
+    <!-- Tabla de vendedores -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 120px;">USUARIO</th>
+                    <th>NOMBRE COMPLETO</th>
+                    <th style="width: 200px;">EMAIL</th>
+                    <th style="width: 120px;">TELÉFONO</th>
+                    <th style="width: 100px;">VENTAS</th>
+                    <th style="width: 120px;">INGRESOS</th>
+                    <th style="width: 120px;">ACCIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vendedor in vendedores %}
+                <tr>
+                    <td class="col-codigo">{{ vendedor.user.username }}</td>
+                    <td>
+                        {% if vendedor.user.first_name or vendedor.user.last_name %}
+                            {{ vendedor.user.first_name }} {{ vendedor.user.last_name }}
+                        {% else %}
+                            <span style="color: #999;">No especificado</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ vendedor.user.email|default:"—" }}</td>
+                    <td>{{ vendedor.perfil.telefono|default:"—" }}</td>
+                    <td class="col-cantidad">{{ vendedor.total_ventas }}</td>
+                    <td class="col-precio">${{ vendedor.total_ingresos|floatformat:0 }}</td>
+                    <td>
+                        <div class="action-btns">
+                            <a href="{% url 'registration:editar_vendedor' vendedor.user.id %}" 
+                               class="btn-icon" 
+                               style="color: #4472c4; text-decoration: none;">
+                                ✏️ Editar
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">👥</div>
+                        <div style="font-weight: 600;">No hay vendedores registrados</div>
+                        <div style="font-size: 13px; margin-top: 5px;">
+                            Crea vendedores desde el panel de administración
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background: #e8f0ff; border: 2px solid #4472c4; border-radius: 4px; font-size: 13px; color: #2e5c8a;">
+        <strong>ℹ️ Información:</strong><br>
+        • Desde aquí puedes editar la información de contacto de los vendedores<br>
+        • Para crear nuevos vendedores, hazlo desde el panel de administración (/admin)<br>
+        • Los vendedores no pueden editar su propio perfil por seguridad
+    </div>
+</div>
+{% endblock %}
