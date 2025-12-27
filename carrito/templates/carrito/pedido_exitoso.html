@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Pedido Exitoso - Mundo Cartas{% endblock %}
+
+{% block page_header %}¡Pedido Confirmado!{% endblock %}
+
+{% block toolbar %}
+<a href="{% url 'carrito:catalogo' %}" class="toolbar-btn">🏠 Catálogo</a>
+<a href="{% url 'carrito:mis_pedidos' %}" class="toolbar-btn">📋 Mis Pedidos</a>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+    <!-- Mensaje de éxito -->
+    <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border: 3px solid #28a745; border-radius: 8px; padding: 30px; margin-bottom: 30px; text-align: center;">
+        <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+        <h2 style="font-size: 24px; font-weight: 700; color: #155724; margin-bottom: 15px;">
+            ¡PAGO EXITOSO!
+        </h2>
+        <p style="font-size: 16px; color: #155724; margin-bottom: 10px;">
+            Tu pedido <strong style="font-size: 20px;">{{ pedido.numero_pedido }}</strong> ha sido confirmado
+        </p>
+        <p style="font-size: 14px; color: #155724;">
+            Recibirás un correo de confirmación con los detalles de tu compra
+        </p>
+    </div>
+    
+    <!-- Información del pedido -->
+    <div style="background: white; border: 2px solid #4472c4; padding: 25px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="font-size: 18px; font-weight: 700; color: #4472c4; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #4472c4;">
+            📦 INFORMACIÓN DEL PEDIDO
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Número de Pedido:</div>
+                <div style="font-size: 18px; font-weight: 700; color: #333;">{{ pedido.numero_pedido }}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Fecha:</div>
+                <div style="font-size: 16px; font-weight: 600; color: #333;">{{ pedido.fecha_pago|date:"d/m/Y H:i" }}</div>
+            </div>
+        </div>
+        
+        <div style="background: #f8f8f8; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Estado:</div>
+            <div style="font-size: 16px; font-weight: 700; color: #28a745;">
+                ✓ PAGADO - Listo para retiro
+            </div>
+        </div>
+        
+        <!-- Productos -->
+        <h4 style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 15px;">Productos:</h4>
+        {% for detalle in detalles %}
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e0e0e0;">
+            <div>
+                <div style="font-weight: 600; color: #333;">{{ detalle.producto.nombre }}</div>
+                <div style="font-size: 12px; color: #666;">{{ detalle.cantidad }} × ${{ detalle.precio_unitario|floatformat:0 }}</div>
+            </div>
+            <div style="font-weight: 700; color: #28a745;">
+                ${{ detalle.subtotal|floatformat:0 }}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Total -->
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #4472c4;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 18px; font-weight: 700;">TOTAL PAGADO:</span>
+                <span style="font-size: 28px; font-weight: 700; color: #4472c4;">
+                    ${{ pedido.total|floatformat:0 }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información de retiro -->
+    <div style="background: #fff9e6; border: 2px solid #ffc107; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: #664d03; margin-bottom: 15px;">
+            📍 INSTRUCCIONES DE RETIRO
+        </h3>
+        <ul style="font-size: 13px; color: #856404; line-height: 1.8; padding-left: 20px;">
+            <li>Tus productos están <strong>apartados y listos para retiro</strong></li>
+            <li>Dirección: <strong>Mundo Cartas - Arica, Chile</strong></li>
+            <li>Horario: <strong>Lunes a Viernes 10:00 - 19:00</strong></li>
+            <li>Presenta este comprobante o tu número de pedido al retirar</li>
+            <li>Plazo de retiro: <strong>7 días hábiles</strong></li>
+        </ul>
+    </div>
+    
+    <!-- Botones de acción -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <a href="{% url 'carrito:detalle_pedido' pedido.id %}" class="btn btn-primary" style="text-decoration: none; text-align: center; padding: 12px;">
+            📄 VER COMPROBANTE
+        </a>
+        <a href="{% url 'carrito:catalogo' %}" class="btn btn-secondary" style="text-decoration: none; text-align: center; padding: 12px;">
+            🛍️ SEGUIR COMPRANDO
+        </a>
+    </div>
+</div>
+{% endblock %}

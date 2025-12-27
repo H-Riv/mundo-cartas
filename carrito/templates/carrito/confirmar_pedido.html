@@ -48,72 +48,81 @@
                 {% endfor %}
             </div>
             
-            <!-- Información de entrega (simulada por ahora) -->
-            <div style="background: #f8f8f8; border: 1px solid #d0d0d0; padding: 20px;">
-                <h3 style="font-size: 14px; font-weight: 700; color: #333; margin-bottom: 15px;">
-                    📍 INFORMACIÓN DE ENTREGA
+            <!-- Información de retiro -->
+            <div style="background: #e8f0ff; border: 1px solid #4472c4; padding: 20px; border-radius: 4px;">
+                <h3 style="font-size: 14px; font-weight: 700; color: #2e5c8a; margin-bottom: 15px;">
+                    📍 INFORMACIÓN DE RETIRO
                 </h3>
-                <p style="font-size: 13px; color: #666; margin: 0;">
-                    <strong>Nota:</strong> Por ahora esta es una simulación. En la versión final podrás ingresar tu dirección de envío y seleccionar método de pago con Transbank.
-                </p>
+                <div style="font-size: 13px; color: #2e5c8a; line-height: 1.8;">
+                    <p><strong>🏪 Retiro en tienda:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Los productos quedarán apartados a tu nombre</li>
+                        <li>Dirección: <strong>Arica, Chile</strong> (ubicación de la tienda)</li>
+                        <li>Horario de retiro: Lunes a Viernes 10:00 - 19:00</li>
+                        <li>Debes presentar tu comprobante de pago al retirar</li>
+                        <li>Plazo máximo de retiro: <strong>7 días hábiles</strong></li>
+                    </ul>
+                </div>
             </div>
         </div>
         
         <!-- Columna derecha: Resumen y pago -->
         <div>
             <div style="background: white; border: 2px solid #4472c4; padding: 25px; position: sticky; top: 20px;">
-                <h3 style="font-size: 16px; font-weight: 700; color: #4472c4; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #4472c4;">
-                    RESUMEN DEL PEDIDO
+                <h3 style="font-size: 16px; font-weight: 700; color: #4472c4; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #4472c4; text-align: center;">
+                    🧾 RESUMEN DEL PEDIDO
                 </h3>
                 
                 <div style="margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
-                        <span>Subtotal ({{ items.count }} productos):</span>
+                        <span style="color: #666;">Subtotal ({{ items.count }} productos):</span>
                         <span style="font-weight: 600;">${{ total|floatformat:0 }}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #666;">
-                        <span>IVA (19%):</span>
-                        <span>${{ total|floatformat:0|add:"0.19"|floatformat:0 }}</span>
+                    
+                    <div style="background: #f8f8f8; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                        <div style="font-size: 11px; color: #666; margin-bottom: 8px; text-align: center;">
+                            <strong>Desglose de IVA (19%)</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 5px;">
+                            <span>Neto (sin IVA):</span>
+                            <span>${{ neto|floatformat:0 }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                            <span>IVA (19%):</span>
+                            <span>${{ iva|floatformat:0 }}</span>
+                        </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #666;">
-                        <span>Envío:</span>
-                        <span>Por calcular</span>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; color: #28a745; font-weight: 600;">
+                        <span>Retiro en tienda:</span>
+                        <span>GRATIS</span>
                     </div>
                 </div>
                 
-                <div style="border-top: 2px solid #4472c4; padding-top: 15px; margin-bottom: 25px;">
+                <div style="border-top: 3px solid #4472c4; padding-top: 15px; margin-bottom: 25px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 18px; font-weight: 700;">TOTAL:</span>
+                        <span style="font-size: 18px; font-weight: 700; color: #333;">TOTAL A PAGAR:</span>
                         <span style="font-size: 32px; font-weight: 700; color: #4472c4;">
                             ${{ total|floatformat:0 }}
                         </span>
                     </div>
                 </div>
                 
-                <!-- Botón de pago (simulado) -->
-                <button type="button" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 16px; margin-bottom: 15px;" onclick="simularPago()">
-                    💳 PAGAR CON TRANSBANK
-                </button>
+                <!-- Botón de pago con Transbank -->
+                <a href="{% url 'carrito:iniciar_pago' %}" class="btn btn-primary" style="width: 100%; text-align: center; text-decoration: none; display: block; padding: 15px; font-size: 16px; margin-bottom: 10px;">
+                    💳 PAGAR CON WEBPAY
+                </a>
                 
                 <a href="{% url 'carrito:ver_carrito' %}" class="btn btn-secondary" style="width: 100%; text-align: center; text-decoration: none; display: block;">
                     ← MODIFICAR CARRITO
                 </a>
                 
-                <div style="margin-top: 20px; padding: 15px; background: #e8f0ff; border-radius: 4px; font-size: 11px; color: #2e5c8a;">
-                    <strong>🔒 Compra segura</strong><br>
-                    Tus datos están protegidos con encriptación SSL
+                <div style="margin-top: 20px; padding: 15px; background: #e8f0ff; border-radius: 4px; font-size: 11px; color: #2e5c8a; text-align: center;">
+                    <strong>🔒 Pago 100% seguro</strong><br>
+                    Procesado por Transbank Webpay Plus
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-function simularPago() {
-    if (confirm('Esta es una simulación del proceso de pago.\n\n¿Deseas proceder con la compra simulada?')) {
-        alert('✓ Pago procesado correctamente (simulación)\n\nEn la versión final, aquí se integrará Transbank para pagos reales.');
-        window.location.href = "{% url 'inventario:lista_productos' %}";
-    }
-}
-</script>
 {% endblock %}

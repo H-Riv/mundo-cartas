@@ -134,3 +134,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+TRANSBANK_ENVIRONMENT = 'TEST'  # Cambiar a 'PRODUCTION' en producción
+TRANSBANK_COMMERCE_CODE = '597055555532'  # Código de comercio de pruebas
+TRANSBANK_API_KEY = '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C'  # API Key de pruebas
+
+SITE_URL = 'http://127.0.0.1:8000'  # Cambiar en producción

@@ -12,4 +12,12 @@ urlpatterns = [
     path('disminuir/<int:item_id>/', views.disminuir_item, name='disminuir_item'),
     path('vaciar/', views.vaciar_carrito, name='vaciar_carrito'),
     path('confirmar/', views.confirmar_pedido, name='confirmar_pedido'),
-]
+    
+    # Proceso de pago
+    path('iniciar-pago/', views.iniciar_pago, name='iniciar_pago'),
+    path('pago/retorno/', views.retorno_pago, name='retorno_pago'),
+    path('pedido-exitoso/<int:pedido_id>/', views.pedido_exitoso, name='pedido_exitoso'),
+    
+    # Historial de pedidos
+    path('mis-pedidos/', views.mis_pedidos, name='mis_pedidos'),
+    path('pedido/<int:pedido_id>/', views.detalle_pedido, name='detalle_pedido'),]
